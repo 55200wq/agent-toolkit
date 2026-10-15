@@ -1,5 +1,26 @@
 # 变更记录
 
+## 0.7.0 — 2026-10-16
+- **收进 3 个第三方技能（MIT ✓，带署名与许可证原文 ✓）** —— 用户从技能市场装的：
+  · `skills/indiv-captain--domain-modeling-zh/`（领域建模 · 术语表 · CONTEXT.md / ADR ✓
+    4 文件：SKILL + CONTEXT-FORMAT + ADR-FORMAT + **ATTRIBUTION** ✓）
+  · `skills/indiv-captain--handoff-doc-zh/`（会话交接单 ✓ 2 文件 ✓）
+  · `skills/indiv-captain--re-pitch-zh/`（没听懂，重讲一遍 ✓ 2 文件 ✓）
+  · 来源：`https://github.com/po-et/workbuddy-skills`（作者 Captain v0.1.1 ✓）；
+    三者均改编自 `mattpocock/skills`（**MIT · Copyright Matt Pocock** ✓）
+  · ⇒ 再分发合规：`ATTRIBUTION.md` 逐字保留 ✓ **必须跟技能一起装** ✗（见下条 ✓）
+- **安装器 `SKILLS` 改成"按目录装"** ✗→✓（这次踩到的真缺陷 ✓）：
+  · 原来只 `copy2(源, d/'SKILL.md')` ✗ ⇒ 多文件技能的 `ATTRIBUTION.md` / `*-FORMAT.md`
+    **一个都不会装** ✗ ⇒ **署名缺失 = 许可问题** ✗（不是小事 ✓）
+  · 现在：源是目录 ⇒ **整个目录一起装** ✓（源是单文件 ⇒ 老行为 ✓ 向后兼容 ✓）
+  · `test_installer.py` 相应加固 ✓：期望表**从 install.py 自己的 `SKILLS` 读** ✓
+    （手写清单已过期过一次 ✗）+ 逐个技能**核对文件齐全** ✓（4/2/2 个 ✓）
+- **未收的 4 个**（按用户约定：来源查不清 ⇒ 只留本地 ✗ 不进公开仓库 ✓）：
+  `grill-me` / `scope-drift-guard` / `plan-first-tooling-zh` / `sandbox-device-access-zh`
+  —— 实测：文件里搜不到任何 `license/许可/MIT/来源/作者/Copyright/http` 线索 ✗，
+  插件管理器 git 日志显示当时连 github.com **超时** ✗，磁盘上也无其它副本 ✗
+- 自测：工具集 **7 套全绿** ✓；`install --skills` 实装 **7 个技能** ✓（文件齐全 ✓）
+
 ## 0.6.2 — 2026-10-16
 - `task-list-discipline-zh` 技能加**纪律⑤：状态如实** ✓（**按用户口径** ✓）
   · 用户要求：`in_progress` **要留着** ✓（用它看"正在做哪条"✓）—— 要改的是

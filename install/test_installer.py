@@ -8,6 +8,7 @@ r"""install.py 的自测：假项目上全程试跑（安装 / 漂移 / 不覆�
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import shutil
@@ -95,10 +96,22 @@ def main() -> int:
         # 装 skill
         r4 = run(['--skills', '--skills-dir', str(skills)])
         check('装 skill 退出码=0', r4.returncode == 0, 'rc=%d' % r4.returncode)
-        want = ['measured-or-flagged-zh', 'script-hygiene-zh', 'dsh-turn-cost-zh',
-                'task-list-discipline-zh']
-        missing = [w for w in want if not (skills / w / 'SKILL.md').exists()]
+        # 期望表**从 install.py 自己的 SKILLS 读** ✓ —— 手写清单会过期 ✗（已经过期过一次 ✓）
+        spec = importlib.util.spec_from_file_location('inst_mod', INSTALL)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        missing = [nm for _s, nm in mod.SKILLS if not (skills / nm / 'SKILL.md').exists()]
         check('SKILLS 里登记的 skill 全装上了 ✓', not missing, str(missing))
+        # 多文件技能：署名/格式文件必须一起装 ✗（漏署名 = 许可问题 ✗）
+        for src, nm in mod.SKILLS:
+            sd = mod.TOOLKIT / src
+            if not sd.is_dir():
+                continue
+            want = sorted(str(f.relative_to(sd)) for f in sd.rglob('*') if f.is_file())
+            got = sorted(str(f.relative_to(skills / nm))
+                         for f in (skills / nm).rglob('*') if f.is_file())
+            lack = [f for f in want if f not in got]
+            check('%s 文件齐（%d 个）✓' % (nm, len(want)), not lack, str(lack))
 
         # ---- 自我安装必须被拦 ✗（实测误踩过：会往 tools/ 写出与真源重名的副本 ✗）
         toolkit = HERE.parent

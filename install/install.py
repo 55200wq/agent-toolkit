@@ -88,12 +88,18 @@ CONFIGS = [
     ('templates/selftests.example.json', 'tools/selftests.json'),
     ('templates/hygiene.example.json', 'tools/hygiene.json'),
 ]
-# skill：源 → 目标子目录名
+# skill：源**目录** → 目标子目录名
+#   ⚠️ 按**目录**装，不是只装 SKILL.md ✗：
+#      多文件技能还有 ATTRIBUTION.md（署名+许可证原文）与 *-FORMAT.md ✗
+#      漏了署名文件就是**许可问题** ✗，不是小事 ✓（2026-10-16 收第三方技能时踩到 ✓）
 SKILLS = [
-    ('skills/measured-or-flagged-zh/SKILL.md', 'measured-or-flagged-zh'),
-    ('skills/script-hygiene-zh/SKILL.md', 'script-hygiene-zh'),
-    ('dsh/skills/dsh-turn-cost-zh/SKILL.md', 'dsh-turn-cost-zh'),
-    ('dsh/skills/task-list-discipline-zh/SKILL.md', 'task-list-discipline-zh'),
+    ('skills/measured-or-flagged-zh', 'measured-or-flagged-zh'),
+    ('skills/script-hygiene-zh', 'script-hygiene-zh'),
+    ('skills/indiv-captain--domain-modeling-zh', 'indiv-captain--domain-modeling-zh'),
+    ('skills/indiv-captain--handoff-doc-zh', 'indiv-captain--handoff-doc-zh'),
+    ('skills/indiv-captain--re-pitch-zh', 'indiv-captain--re-pitch-zh'),
+    ('dsh/skills/dsh-turn-cost-zh', 'dsh-turn-cost-zh'),
+    ('dsh/skills/task-list-discipline-zh', 'task-list-discipline-zh'),
 ]
 AGENTS_SNIPPET = 'templates/AGENTS.snippet.md'
 HOOK = 'templates/pre-commit'
@@ -203,10 +209,23 @@ def install_hook(project: Path):
 def install_skills(skills_dir: Path) -> int:
     n = 0
     for src, name in SKILLS:
+        s = TOOLKIT / src
         d = skills_dir / name
         d.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(TOOLKIT / src, d / 'SKILL.md')
-        print('  已装 skill：%s' % (d / 'SKILL.md'))
+        if s.is_dir():
+            # **整个技能目录一起装** ✓（多文件技能：ATTRIBUTION.md / *-FORMAT.md 一个都不能漏 ✗）
+            copied = 0
+            for f in sorted(s.rglob('*')):
+                if not f.is_file():
+                    continue
+                rel = f.relative_to(s)
+                (d / rel).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(f, d / rel)
+                copied += 1
+            print('  已装 skill：%s（%d 个文件 ✓）' % (d, copied))
+        else:
+            shutil.copy2(s, d / 'SKILL.md')
+            print('  已装 skill：%s' % (d / 'SKILL.md'))
         n += 1
     print('共装 %d 个 skill 到 %s（其他 agent 用 --skills-dir 指定自己的目录）'
           % (n, skills_dir))

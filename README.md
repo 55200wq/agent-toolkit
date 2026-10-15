@@ -85,7 +85,7 @@ STATE_OK = 4           # 依据: 语义（状态码，非可调）
 
 ```
 agent-toolkit/
-├── skills/      agent 规则（可安装到任意 agent）
+├── skills/      agent 规则（可安装到任意 agent；含第三方 MIT 技能 ✓ 各自带 ATTRIBUTION.md ✓）
 ├── tools/       可执行工具（通用 ✓ 不含平台/项目知识）
 ├── dsh/         ★ DSH 专用工具与规则（读 DSH 会话日志等）
 ├── templates/   往项目里放的东西（AGENTS 片段 / pre-commit / 配置模板）
@@ -109,6 +109,7 @@ agent-toolkit/
 | 脚本卫生 | `tools/script-hygiene/` | H1 可编译 / H2 路径转义 / H3 输出编码（**stdout 与 stderr 都要兜** ✗）+ `fix_bootstrap.py` 整类升级兜底 + 自测（H3 在 Linux 默认关 ✓）|
 | agent 规则 | `skills/measured-or-flagged-zh/` | 装进 agent 后它写数值时会有意识标来历 |
 | agent 规则 | `skills/script-hygiene-zh/` | 写脚本前：修整类不打补丁 / 校验后写 / 加编码兜底 |
+| **第三方技能**（MIT ✓） | `skills/indiv-captain--*/` | 领域建模与术语表 / 会话交接单 / 没听懂重讲一遍 —— 来源与许可逐字保留在各自的 `ATTRIBUTION.md` ✓（**安装器按目录整装** ⇒ 署名文件不会漏 ✗）|
 | **DSH 会话成本** | **`dsh/tools/session-cost/`** | 给轮次号 → 步级 token 时间线 + **把"贵"归因到具体事件** + 成本纪律审计 |
 | **DSH 规则** | `dsh/成本纪律.md` · `dsh/skills/dsh-turn-cost-zh/` | 轮次成本纪律（三条动手前自检）|
 | 项目模板 | `templates/` | AGENTS 片段（标记包裹、幂等）/ git 钩子 / 配置模板 |
