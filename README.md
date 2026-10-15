@@ -96,7 +96,9 @@ agent-toolkit/
 |---|---|---|
 | 数值溯源 | `tools/provenance/` | 引擎 + 配置模板 + 薄封装 + 自测 |
 | 自检汇总 | `tools/selftests/` | 自动发现套件 + 自测 |
+| 脚本卫生 | `tools/script-hygiene/` | H1 可编译 / H2 路径转义 / H3 输出编码 + 自测 |
 | agent 规则 | `skills/measured-or-flagged-zh/` | 装进 agent 后它写数值时会有意识标来历 |
+| agent 规则 | `skills/script-hygiene-zh/` | 写脚本前：修整类不打补丁 / 校验后写 / 加编码兜底 |
 | 项目模板 | `templates/` | AGENTS 片段（标记包裹、幂等）/ git 钩子 / 配置模板 |
 | 安装 | `install/` | `--project` / `--skills` / `--all` / `--check` |
 | 文档 | `docs/` | 数值纪律 · 接入清单 · 设计方案 |
@@ -120,6 +122,7 @@ agent-toolkit/
 | 抓回复/文档里的错误断言 ✗ | 那靠 skill 规则 + 人工抽查 |
 | 扫函数体内的行内字面量 ✗ | 有意收窄以降低误报（只扫 4 种写法：模块级常量 / `self.x = 数字` / 数值表 / `__init__` 签名默认值）|
 | 自动修代码 ✗ | 只报告，决定权在人 |
+| 判断脚本逻辑对错 ✗ | 脚本卫生只管 H1/H2/H3 三类反复事故 |
 
 ## 新增一个工具
 

@@ -19,6 +19,11 @@
    "label": "汇总器",
    "slow": false,
    "desc": "造 3 个假套件验证发现/超时/汇总"
+  },
+  "test_hygiene.py": {
+   "label": "脚本卫生",
+   "slow": false,
+   "desc": "造假文件验证 H1/H2/H3 报红与放行"
   }
  }
 }

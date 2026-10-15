@@ -53,15 +53,19 @@ MANAGED = [
     ('tools/provenance/provenance_check.py', 'tools/provenance_check.py'),
     ('tools/provenance/_selftest_provenance.py', 'tools/_selftest_provenance.py'),
     ('tools/selftests/run_all_selftests.py', 'tools/run_all_selftests.py'),
+    ('tools/script-hygiene/hygiene_check.py', 'tools/hygiene_check.py'),
+    ('tools/script-hygiene/_selftest_hygiene.py', 'tools/_selftest_hygiene.py'),
 ]
 # 配置模板：源 → 项目内相对路径（缺了才写 ✓ 不参与比较 ✓）
 CONFIGS = [
     ('templates/provenance.example.json', 'tools/provenance.json'),
     ('templates/selftests.example.json', 'tools/selftests.json'),
+    ('templates/hygiene.example.json', 'tools/hygiene.json'),
 ]
 # skill：源 → 目标子目录名
 SKILLS = [
     ('skills/measured-or-flagged-zh/SKILL.md', 'measured-or-flagged-zh'),
+    ('skills/script-hygiene-zh/SKILL.md', 'script-hygiene-zh'),
 ]
 AGENTS_SNIPPET = 'templates/AGENTS.snippet.md'
 HOOK = 'templates/pre-commit'
@@ -133,12 +137,14 @@ def write_agents_snippet(project: Path) -> bool:
     snippet = (TOOLKIT / AGENTS_SNIPPET).read_text(encoding='utf-8').rstrip() + '\n'
     f = project / 'AGENTS.md'
     old = f.read_text(encoding='utf-8') if f.exists() else ''
+    # ⚠️ 替换串**必须用函数形式** ✗：片段里有 `'C:\temp\x'` 这类路径，
+    #    直接当 re.sub 的替换串会被当转义 ✗（bad escape \x ✗ —— 本项目真踩过 ✓）
+    sub = lambda _m: snippet                                    # noqa: E731
     if BEGIN in old:
-        new = re.sub(re.escape(BEGIN) + r'.*?' + re.escape(END) + r'\n?', snippet, old,
-                     flags=re.S)
+        new = re.sub(re.escape(BEGIN) + r'.*?' + re.escape(END) + r'\n?', sub, old, flags=re.S)
     elif LEGACY_BEGIN in old:                  # 改名前的旧块 ⇒ 替换（**不重复追加** ✓）
         new = re.sub(re.escape(LEGACY_BEGIN) + r'.*?' + re.escape(LEGACY_END) + r'\n?',
-                     snippet, old, flags=re.S)
+                     sub, old, flags=re.S)
     elif old.strip():
         new = old.rstrip() + '\n\n' + snippet
     else:
@@ -204,7 +210,12 @@ def check(project: Path) -> int:
                 ok += 1
     print('项目：%s' % project)
     print('  身份证版本：%s ｜ toolkit 当前：%s' % (stamp.get('toolkit_version'), version()))
-    print('  一致 %d ｜ 被本地改过 %d ｜ 落后于 toolkit %d' % (ok, len(modified), len(outdated)))
+    ver_old = stamp.get('toolkit_version') != version()
+    print('  一致 %d ｜ 被本地改过 %d ｜ 落后于 toolkit %d%s'
+          % (ok, len(modified), len(outdated), '（含版本落后 ✓）' if ver_old else ''))
+    if ver_old and not outdated:
+        print('    ⚠ toolkit 已升级到 %s（身份证还是 %s）⇒ 重跑安装即可'
+              % (version(), stamp.get('toolkit_version')))
     for m in modified:
         print('    ✗ 被本地改过/缺失：%s  ⇒ 要么改回去，要么把改动提回 agent-toolkit' % m)
     for o in outdated:
