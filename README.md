@@ -110,11 +110,12 @@ agent-toolkit/
 | agent 规则 | `skills/measured-or-flagged-zh/` | 装进 agent 后它写数值时会有意识标来历 |
 | agent 规则 | `skills/script-hygiene-zh/` | 写脚本前：修整类不打补丁 / 校验后写 / 加编码兜底 |
 | **第三方技能**（MIT ✓） | `skills/indiv-captain--*/` | 领域建模与术语表 / 会话交接单 / 没听懂重讲一遍 —— 来源与许可逐字保留在各自的 `ATTRIBUTION.md` ✓（**安装器按目录整装** ⇒ 署名文件不会漏 ✗）|
+| **本地产物技能** | `skills/{plan-first-tooling-zh,scope-drift-guard,grill-me}` · `dsh/skills/sandbox-device-access-zh` | 先方案后实现 / 方案外变更守门员 / 方案拷问 / 沙箱设备诊断 —— **来源见 [`docs/技能来源与许可.md`](docs/技能来源与许可.md)** ✓（含"`grill-me` 来源待考"✗ 与回退方式 ✓）|
 | **DSH 会话成本** | **`dsh/tools/session-cost/`** | 给轮次号 → 步级 token 时间线 + **把"贵"归因到具体事件** + 成本纪律审计 |
 | **DSH 规则** | `dsh/成本纪律.md` · `dsh/skills/dsh-turn-cost-zh/` | 轮次成本纪律（三条动手前自检）|
 | 项目模板 | `templates/` | AGENTS 片段（标记包裹、幂等）/ git 钩子 / 配置模板 |
 | 安装 | `install/` | `--project` / `--skills` / `--all` / `--check`；**拒绝 `--project` 指向工具集自己**（退出码 4 ✗ —— 否则会在 `tools/` 下写出与真源重名的副本 ✗）|
-| 文档 | `docs/` | 数值纪律 · 接入清单 · 设计方案 |
+| 文档 | `docs/` | 数值纪律 · 接入清单 · 设计方案 · **技能来源与许可**（11 个技能逐个交代 ✓）|
 
 ## 设计约定
 

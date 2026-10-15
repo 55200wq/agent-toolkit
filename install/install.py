@@ -98,8 +98,14 @@ SKILLS = [
     ('skills/indiv-captain--domain-modeling-zh', 'indiv-captain--domain-modeling-zh'),
     ('skills/indiv-captain--handoff-doc-zh', 'indiv-captain--handoff-doc-zh'),
     ('skills/indiv-captain--re-pitch-zh', 'indiv-captain--re-pitch-zh'),
+    # 项目会话里产出的规则技能 ✓（正文无平台专有名词 ⇒ 归通用区 ✓；来源见 docs/技能来源与许可.md）
+    ('skills/plan-first-tooling-zh', 'plan-first-tooling-zh'),
+    ('skills/scope-drift-guard', 'scope-drift-guard'),
+    ('skills/grill-me', 'grill-me'),
     ('dsh/skills/dsh-turn-cost-zh', 'dsh-turn-cost-zh'),
     ('dsh/skills/task-list-discipline-zh', 'task-list-discipline-zh'),
+    # 正文含 DSH 专有名词（DSH_* 沙箱变量 / DSH 文件策略）⇒ 归 DSH 区 ✗
+    ('dsh/skills/sandbox-device-access-zh', 'sandbox-device-access-zh'),
 ]
 AGENTS_SNIPPET = 'templates/AGENTS.snippet.md'
 HOOK = 'templates/pre-commit'

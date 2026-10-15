@@ -1,5 +1,23 @@
 # 变更记录
 
+## 0.8.0 — 2026-10-16
+- 按用户决定，**再收 4 个技能** ✓（全部来自 `~/.dsh/skills/`）
+  · 通用区 `skills/`：`plan-first-tooling-zh` ✓ `scope-drift-guard` ✓ `grill-me` ✓
+  · DSH 区 `dsh/skills/`：`sandbox-device-access-zh` ✗ ——
+    判据是"**正文里有没有平台专有名词**"✓：它有 `DSH_*` 沙箱变量与"DSH 文件策略" ✗；
+    而 `grill-me` 正文**没有** ✗（只多一个 frontmatter 字段 `disable-model-invocation` ✓）
+- **更正 0.7.0 的结论** ✗：当时说这 4 个"来源查不清" ✗ —— **漏查了
+  `~/.dsh/skills/变更说明.md`**（214 行的技能变更日志 ✓）⇒ 其中 3 个其实**是本项目会话的产出** ✓：
+  · `plan-first-tooling-zh`（2026-10-12 ✓ **用户明确要求** ✓ 起因：技巧段执行器边写边调出两次事故 ✗）
+  · `scope-drift-guard`（2026-10-10 ✓ 起因：全自动作业里加了未声明的**隐式回退** ✗）
+  · `sandbox-device-access-zh`（2026-10-12 ✓ **用户要求写进全局 skills** ✓ 起因：采集卡权限事故 ✗）
+  · 只有 `grill-me` **来源仍不明** ✗（2026-10-10 基线盘点登记为"已存在"✓ 未改动 ✓）
+- 新增 **`docs/技能来源与许可.md`** ✓：11 个技能逐个列 **来源 / 许可 / 依据 / 回退方式** ✓
+  （含"`grill-me` 待考"✗ —— 将来若有许可顾虑，删目录即可完全回退 ✓）
+- 安装器 `SKILLS` 登记到 **11 个技能** ✓（通用区 8 ✓ / DSH 区 3 ✓）
+- 自测：`test_installer.py` 的期望表**自动跟随 `SKILLS`** ✓ ⇒ 这次加 4 个技能**一行测试都不用改** ✓
+  （这正是 0.6.2 把它从"手写清单"改成"读 `SKILLS`"的收益 ✓）
+
 ## 0.7.0 — 2026-10-16
 - **收进 3 个第三方技能（MIT ✓，带署名与许可证原文 ✓）** —— 用户从技能市场装的：
   · `skills/indiv-captain--domain-modeling-zh/`（领域建模 · 术语表 · CONTEXT.md / ADR ✓
