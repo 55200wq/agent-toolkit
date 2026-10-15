@@ -49,9 +49,11 @@ DEFAULTS = {
 
 def load_cfg(root, explicit=None):
     cfg = dict(DEFAULTS)
+    # 顺序：显式 > root 自己的 > 引擎同级 > cwd
+    # （cwd 放最后：跑测试时 cwd 可能是工具集本身，会误用工具集的配置 ✗ —— 自举时抓到的）
     cands = ([Path(explicit)] if explicit else []) + [
-        Path.cwd() / 'selftests.json', root / 'selftests.json',
-        Path(__file__).resolve().parent / 'selftests.json']
+        root / 'selftests.json', Path(__file__).resolve().parent / 'selftests.json',
+        Path.cwd() / 'selftests.json']
     for c in cands:
         if c.exists():
             raw = json.loads(c.read_text(encoding='utf-8'))

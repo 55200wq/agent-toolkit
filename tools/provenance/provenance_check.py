@@ -80,9 +80,11 @@ def find_config(explicit=None, start=None):
         return p if p.exists() else None
     engine_dir = Path(__file__).resolve().parent
     root2 = here.parent if here.name == 'tools' else here
-    cands = [Path.cwd() / DEFAULT_CONFIG_NAME, here / DEFAULT_CONFIG_NAME,
-             engine_dir / DEFAULT_CONFIG_NAME, root2 / DEFAULT_CONFIG_NAME,
-             here.parent / DEFAULT_CONFIG_NAME]
+    # 顺序：**root 自己** > 引擎同级 > 更上一层 > cwd
+    # （cwd 放最后：跑自测时 cwd 可能是工具集本身，会误用工具集的配置 ✗ —— 自举时抓到的）
+    cands = [here / DEFAULT_CONFIG_NAME, root2 / DEFAULT_CONFIG_NAME,
+             engine_dir / DEFAULT_CONFIG_NAME, here.parent / DEFAULT_CONFIG_NAME,
+             Path.cwd() / DEFAULT_CONFIG_NAME]
     for c in cands:
         if c.exists():
             return c
