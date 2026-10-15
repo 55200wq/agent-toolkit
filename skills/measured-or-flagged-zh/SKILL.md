@@ -79,21 +79,25 @@ STUCK_WINDOW_S = 45    # 依据: 未实测（初值，见 assumptions.json）
 
 | 位置 | 内容 |
 |---|---|
-| `<agent-tools>/tools/provenance/` | 数值溯源自检（引擎 + 配置模板 + 薄封装 + 自测）|
-| `<agent-tools>/tools/selftests/` | 自检汇总器（自动发现套件 + 配置模板 + 自测）|
-| `<agent-tools>/install/` | 装进项目 / 漂移检测（一致0 被改1 落后2 未装3）|
-| `<agent-tools>/docs/数值纪律.md` | **规则正文**（本文件的详细版）|
+| `<agent-toolkit>/tools/provenance/` | 数值溯源自检（引擎 + 配置模板 + 薄封装 + 自测）|
+| `<agent-toolkit>/tools/selftests/` | 自检汇总器（自动发现套件 + 配置模板 + 自测）|
+| `<agent-toolkit>/install/` | 装进项目 / 漂移检测（一致0 被改1 落后2 未装3）|
+| `<agent-toolkit>/docs/数值纪律.md` | **规则正文**（本文件的详细版）|
 
-工具集默认位置：`C:\Users\57226\Desktop\share_data\agent-tools`（若移动了，以 `agent-tools` 目录名为准）
+工具集：**agent-toolkit** —— https://github.com/55200wq/agent-toolkit
+
+- 本地默认位置：`C:\Users\57226\Desktop\share_data\agent-toolkit`
+- 从 GitHub 一行安装：
+  `curl -fsSL https://raw.githubusercontent.com/55200wq/agent-toolkit/main/install/install.sh | bash`
 
 装进任意项目（约 2 分钟）：
 
 ```
-python <agent-tools>/install/install_into_project.py --project <项目根>
+python <agent-toolkit>/install/install_into_project.py --project <项目根>
 # 然后按提示：生成未实测清单 → 改 scan → 跑自检
 ```
 
-详见 `<agent-tools>/docs/接入清单.md` ✓
+详见 `<agent-toolkit>/docs/接入清单.md` ✓
 
 ## 边界
 
