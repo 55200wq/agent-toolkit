@@ -96,7 +96,7 @@ agent-toolkit/
 |---|---|---|
 | 数值溯源 | `tools/provenance/` | 引擎 + 配置模板 + 薄封装 + 自测 |
 | 自检汇总 | `tools/selftests/` | 自动发现套件 + 自测 |
-| 脚本卫生 | `tools/script-hygiene/` | H1 可编译 / H2 路径转义 / H3 输出编码 + 自测 |
+| 脚本卫生 | `tools/script-hygiene/` | H1 可编译 / H2 路径转义 / H3 输出编码 + 自测（H3 在 Linux 默认关 ✓）|
 | agent 规则 | `skills/measured-or-flagged-zh/` | 装进 agent 后它写数值时会有意识标来历 |
 | agent 规则 | `skills/script-hygiene-zh/` | 写脚本前：修整类不打补丁 / 校验后写 / 加编码兜底 |
 | 项目模板 | `templates/` | AGENTS 片段（标记包裹、幂等）/ git 钩子 / 配置模板 |

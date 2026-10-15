@@ -47,7 +47,7 @@ python <agent-toolkit>/install/install.py --project .
 |---|---|---|
 | **H1** | 所有 `.py` 必须能编译 | 用正则/行号批量改源码 ⇒ 改坏文件 ✗ 而且没有任何检查拦住 ✗ |
 | **H2** | 路径不写反斜杠字面量 | `'C:\temp\x'` 里 `\t` 是制表符 ✗ 静默错路径；`\U` 直接语法错 ✗ |
-| **H3** | 打印非 ASCII 的脚本必须有 UTF-8 兜底 | 输出被重定向/走管道时用 GBK ✗ ⇒ `UnicodeEncodeError` |
+| **H3** | 打印非 ASCII 的脚本必须有 UTF-8 兜底（**Linux 默认关闭** ✓ 那边默认就是 UTF-8）| 输出被重定向/走管道时用 GBK ✗ ⇒ `UnicodeEncodeError` |
 
 ```python
 # H1：改源码只用精确编辑或整文件重写 ✗ 不要用正则/行号；写文件前 ast.parse 校验 ✓
