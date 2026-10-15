@@ -28,7 +28,7 @@ STATE_OK = 4           # 依据: 语义（状态码，非可调）
 
 ## 工具从哪来、怎么查漂移
 
-本项目的通用工具来自 **agent-toolkit**（https://github.com/<user>/agent-toolkit）：
+本项目的通用工具来自 **agent-toolkit**（https://github.com/55200wq/agent-toolkit）：
 
 ```bash
 # 查项目副本是否被改过 / 落后（一致0 被改1 落后2 未装3）

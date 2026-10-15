@@ -33,16 +33,16 @@ Agent 写代码时经常会**随手填一个数**（超时 3 秒、阈值 2 像�
 
 ```bash
 # Linux / macOS / Git-Bash
-curl -fsSL https://raw.githubusercontent.com/<user>/agent-toolkit/main/install/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/55200wq/agent-toolkit/main/install/install.sh | bash
 
 # Windows / PowerShell
-irm https://raw.githubusercontent.com/<user>/agent-toolkit/main/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/55200wq/agent-toolkit/main/install/install.ps1 | iex
 ```
 
 或者本地克隆：
 
 ```bash
-git clone https://github.com/<user>/agent-toolkit.git
+git clone https://github.com/55200wq/agent-toolkit.git
 python agent-toolkit/install/install.py --all --project /path/to/your/project
 ```
 

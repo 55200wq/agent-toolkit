@@ -2,16 +2,16 @@
 
 > 前提：本目录已经是 git 仓库（`git log` 有历史 ✓），分支为 `main` ✓
 
-## 一、替换占位 `<user>`
+## 一、替换占位 `55200wq`
 
-仓库里所有外部 URL 都用了占位 `<user>` ✓，发布前替换成你的 GitHub 用户名：
+仓库里所有外部 URL 都用了占位 `55200wq` ✓，发布前替换成你的 GitHub 用户名：
 
 ```bash
 cd agent-toolkit
-grep -rn "<user>" . --include="*.md" --include="*.sh" --include="*.ps1" --include="*.py"
+grep -rn "55200wq" . --include="*.md" --include="*.sh" --include="*.ps1" --include="*.py"
 # 批量替换（把 YOURNAME 换成你的用户名）
-grep -rl "<user>" . --include="*.md" --include="*.sh" --include="*.ps1" \
-  | xargs sed -i 's|<user>|YOURNAME|g'
+grep -rl "55200wq" . --include="*.md" --include="*.sh" --include="*.ps1" \
+  | xargs sed -i 's|55200wq|YOURNAME|g'
 git add -A && git commit -m "替换 GitHub 用户名为 YOURNAME"
 ```
 
