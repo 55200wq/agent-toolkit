@@ -86,11 +86,21 @@ STATE_OK = 4           # 依据: 语义（状态码，非可调）
 ```
 agent-toolkit/
 ├── skills/      agent 规则（可安装到任意 agent）
-├── tools/       可执行工具（每个一目录：引擎 + 自测 + README）
+├── tools/       可执行工具（通用 ✓ 不含平台/项目知识）
+├── dsh/         ★ DSH 专用工具与规则（读 DSH 会话日志等）
 ├── templates/   往项目里放的东西（AGENTS 片段 / pre-commit / 配置模板）
 ├── install/     安装器（install.py + 一行安装脚本）
 └── docs/        规则与接入文档
 ```
+
+**分区约定（重要 ✓）**
+
+| 区域 | 放什么 | 判据 |
+|---|---|---|
+| `tools/` · `skills/` · `templates/` | **通用**工具与规则 ✓ | 换任何项目/平台都能用 ✓ |
+| **`dsh/`** | **DSH 专用** ✓ | 依赖 DSH 的会话日志格式、事件模型、profile 机制等 ✗ |
+
+⇒ `tools/` 里的引擎**不含任何平台/项目知识** ✓；平台专用的东西一律进 `dsh/` ✓ 不混放 ✗
 
 | 功能 | 目录 | 说明 |
 |---|---|---|
@@ -99,6 +109,8 @@ agent-toolkit/
 | 脚本卫生 | `tools/script-hygiene/` | H1 可编译 / H2 路径转义 / H3 输出编码 + 自测（H3 在 Linux 默认关 ✓）|
 | agent 规则 | `skills/measured-or-flagged-zh/` | 装进 agent 后它写数值时会有意识标来历 |
 | agent 规则 | `skills/script-hygiene-zh/` | 写脚本前：修整类不打补丁 / 校验后写 / 加编码兜底 |
+| **DSH 会话成本** | **`dsh/tools/session-cost/`** | 给轮次号 → 步级 token 时间线 + **把"贵"归因到具体事件** + 成本纪律审计 |
+| **DSH 规则** | `dsh/成本纪律.md` · `dsh/skills/dsh-turn-cost-zh/` | 轮次成本纪律（三条动手前自检）|
 | 项目模板 | `templates/` | AGENTS 片段（标记包裹、幂等）/ git 钩子 / 配置模板 |
 | 安装 | `install/` | `--project` / `--skills` / `--all` / `--check` |
 | 文档 | `docs/` | 数值纪律 · 接入清单 · 设计方案 |

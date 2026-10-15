@@ -66,6 +66,7 @@ CONFIGS = [
 SKILLS = [
     ('skills/measured-or-flagged-zh/SKILL.md', 'measured-or-flagged-zh'),
     ('skills/script-hygiene-zh/SKILL.md', 'script-hygiene-zh'),
+    ('dsh/skills/dsh-turn-cost-zh/SKILL.md', 'dsh-turn-cost-zh'),
 ]
 AGENTS_SNIPPET = 'templates/AGENTS.snippet.md'
 HOOK = 'templates/pre-commit'

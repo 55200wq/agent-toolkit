@@ -76,7 +76,11 @@ def load_cfg(root: Path, explicit=None):
         Path.cwd() / DEFAULT_CONFIG_NAME]
     for c in cands:
         if c.exists():
-            raw = json.loads(c.read_text(encoding='utf-8'))
+            try:                           # 空文件/坏 JSON 不该让工具崩 ✗（本项目真踩过 ✓）
+                raw = json.loads(c.read_text(encoding='utf-8-sig'))
+            except Exception as e:         # noqa: BLE001
+                print('[警告] 配置无法解析，已跳过：%s（%s）' % (c, str(e)[:60]))
+                continue
             for k, v in raw.items():
                 if k == 'rules' and isinstance(v, dict):
                     cfg['rules'] = {**DEFAULTS['rules'], **v}

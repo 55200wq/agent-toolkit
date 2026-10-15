@@ -50,3 +50,18 @@
 - 新增 `.gitattributes`（shell 脚本强制 LF ✓ 防止 Linux 克隆到 CRLF 导致 shebang 失效 ✗）
 - `install.sh` / `templates/pre-commit` 补上**执行位**（100755 ✓，Linux 上可直接运行 ✓）
 - 文档补「平台差异」与「Linux 上怎么用」两节 ✓
+
+## 0.4.0 — 2026-10-16
+- 新增 **`dsh/`：DSH 专用工具区**（原独立的 `share_data/dsh-tools` 并入 ✓）
+  - `dsh/tools/session-cost/session_cost.py`：**会话成本分析**（定位会话 → 最贵的 N 轮 →
+    单轮步级时间线 → **把"贵"归因到具体事件**：系统提示重建 / 压缩注入 / 指令更新）+ 成本纪律审计
+  - `dsh/tools/session-cost/test_session_cost.py`：造假日志自测（14 项 ✓）
+  - `dsh/skills/dsh-turn-cost-zh/`：轮次成本纪律技能（已可 `--skills` 安装 ✓）
+  - `dsh/成本纪律.md`：实测得来的三条动手前自检 + 验收方式
+- README 增加**分区约定**：`tools/` 只放通用工具 ✓；依赖 DSH 的东西一律进 `dsh/` ✓
+- 安装器 `SKILLS` 登记 `dsh-turn-cost-zh` ✓；`provenance.json` 扫描面纳入 `dsh/**` ✓
+- 修两个真 bug（都是本项目踩过的同一类 ✗）：
+  - 引擎读配置不支持 BOM/空文件 ⇒ 现在用 `utf-8-sig` 且**容错跳过**并告警 ✓
+  - 一个 0 字节的 `hygiene.json` 让检查器崩 ✗（工具链自己写出来的）⇒ 已删
+- 实测发现（会话日志）：成本当量 **90% 是缓存读** = 步数 × 上下文 ✗；
+  "改工作区配置类文件（AGENTS.md）"会触发系统提示重建 ⇒ **≈ 当前上下文全额重发** ✗

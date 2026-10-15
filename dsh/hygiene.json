@@ -1,0 +1,8 @@
+{
+ "_说明": "dsh-tools 的脚本卫生口径（复用 agent-toolkit 的 hygiene_check.py ✓）。",
+ "scan": ["tools/**/*.py"],
+ "exclude": [".git/**", "**/__pycache__/**"],
+ "rules": {"H1": true, "H2": true, "H3": true},
+ "bootstrap_markers": ["reconfigure(encoding", "TextIOWrapper(sys.stdout.buffer", "PYTHONIOENCODING"],
+ "h3_ignore_files": []
+}
