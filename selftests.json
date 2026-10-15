@@ -34,6 +34,11 @@
       "label": "兜底升级",
       "slow": false,
       "desc": "造假项目验证替换/插入/不猜怪形态"
+    },
+    "test_todo_peek.py": {
+      "label": "任务列表",
+      "slow": false,
+      "desc": "造假会话日志验证取最后一次/全部/指定轮次"
     }
   }
 }

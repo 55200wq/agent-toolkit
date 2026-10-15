@@ -10,6 +10,7 @@
 | 工具 | 作用 |
 |---|---|
 | [`session-cost`](tools/session-cost/session_cost.py) | **会话成本分析**：定位会话 → 全会话总览 → 单轮步级时间线 → **把"贵"归因到具体动作**（系统提示重建 / 压缩注入 / 指令更新）+ 成本纪律审计 |
+| [`todo-peek`](tools/todo-peek/todo_peek.py) | **看任务列表**（`todo_write` 的历次写入）：DSH 界面上只有一行折叠的工具行 ✗ 且投影下一轮就清空 ✗ ⇒ 从**会话日志**里把它读出来 ✓ 配 [`task-list-discipline-zh`](skills/task-list-discipline-zh/SKILL.md) 用 ✓ |
 
 ## 快速开始
 
@@ -29,22 +30,30 @@ python tools/session-cost/session_cost.py --audit
 python tools/session-cost/session_cost.py --list
 # ⚠ --grep 是"筛选会话"✓（决定分析哪个会话），**不是**"搜内容"✗ ⇒ 必须再给一个模式 ✓
 python tools/session-cost/session_cost.py --grep 关键词 --turns
+
+# 任务列表（todo_write）：界面只有一行折叠的工具行 ✗ ⇒ 从日志读 ✓
+python tools/todo-peek/todo_peek.py                  # 最近会话的最后一次写入（= 当前清单）
+python tools/todo-peek/todo_peek.py --all            # 全部历次（看计划怎么变的）
+python tools/todo-peek/todo_peek.py --turn 168       # 指定轮次
 ```
 
 ## 规则（给 agent 读）
 
 - [`成本纪律.md`](成本纪律.md) —— **轮次成本纪律**（实测得来，含三条动手前自检）
 - [`skills/dsh-turn-cost-zh/SKILL.md`](skills/dsh-turn-cost-zh/SKILL.md) —— 装进 agent 的技能：什么时候该停下来看看成本
+- [`skills/task-list-discipline-zh/SKILL.md`](skills/task-list-discipline-zh/SKILL.md) —— 装进 agent 的技能：**任务列表纪律**（开工先贴 / 收尾再贴 / 不在列表里就停下问）
 
 ```bash
-# 把技能装到 DSH 的 skills 目录（其他 agent 用 --skills-dir 的道理同 agent-toolkit）
-copy skills\dsh-turn-cost-zh\SKILL.md %USERPROFILE%\.dsh\skills\dsh-turn-cost-zh\SKILL.md
+# 装技能（用安装器一次装全套 ✓；手工装也行）
+python ../install/install.py --project <项目根> --skills
 ```
 
 ## 自检
 
 ```bash
-python tools/session-cost/test_session_cost.py                    # 造假日志验证解析/归因/审计
+python tools/session-cost/test_session_cost.py      # 造假日志验证解析/归因/审计
+python tools/todo-peek/test_todo_peek.py            # 造假日志验证取最后一次/全部/指定轮次
+python ..\tools\selftests\run_all_selftests.py --root ..   # 或直接跑全套（含上面两个）
 python ..\tools\script-hygiene\hygiene_check.py --root .   # 复用通用工具集的卫生检查 ✓
 ```
 
