@@ -95,9 +95,25 @@ def main() -> int:
         # 装 skill
         r4 = run(['--skills', '--skills-dir', str(skills)])
         check('装 skill 退出码=0', r4.returncode == 0, 'rc=%d' % r4.returncode)
-        check('两个 skill 都装了',
-              (skills / 'measured-or-flagged-zh/SKILL.md').exists()
-              and (skills / 'script-hygiene-zh/SKILL.md').exists())
+        want = ['measured-or-flagged-zh', 'script-hygiene-zh', 'dsh-turn-cost-zh',
+                'task-list-discipline-zh']
+        missing = [w for w in want if not (skills / w / 'SKILL.md').exists()]
+        check('SKILLS 里登记的 skill 全装上了 ✓', not missing, str(missing))
+
+        # ---- 自我安装必须被拦 ✗（实测误踩过：会往 tools/ 写出与真源重名的副本 ✗）
+        toolkit = HERE.parent
+        before = sorted(p.name for p in (toolkit / 'tools').iterdir())
+        r5 = run(['--project', str(toolkit), '--skills'])
+        check('--project 指向工具集自己 ⇒ 退出码=4 ✗', r5.returncode == 4, 'rc=%d' % r5.returncode)
+        o5 = (r5.stdout or '') + (r5.stderr or '')
+        check('说明了"为什么不行"（会写出重名副本 ✗）', '工具集自己' in o5 and '真源' in o5)
+        check('给出了正确用法（--skills，不带 --project ✓）', '--skills' in o5)
+        after = sorted(p.name for p in (toolkit / 'tools').iterdir())
+        check('拒绝时**没写任何文件** ✓', before == after,
+              str(sorted(set(after) - set(before)))[:60])
+
+        r6 = run(['--project', str(toolkit / 'tools')])
+        check('指向工具集**子目录**也被拦 ✗', r6.returncode == 4, 'rc=%d' % r6.returncode)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

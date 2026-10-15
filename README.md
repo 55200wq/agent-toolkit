@@ -112,7 +112,7 @@ agent-toolkit/
 | **DSH 会话成本** | **`dsh/tools/session-cost/`** | 给轮次号 → 步级 token 时间线 + **把"贵"归因到具体事件** + 成本纪律审计 |
 | **DSH 规则** | `dsh/成本纪律.md` · `dsh/skills/dsh-turn-cost-zh/` | 轮次成本纪律（三条动手前自检）|
 | 项目模板 | `templates/` | AGENTS 片段（标记包裹、幂等）/ git 钩子 / 配置模板 |
-| 安装 | `install/` | `--project` / `--skills` / `--all` / `--check` |
+| 安装 | `install/` | `--project` / `--skills` / `--all` / `--check`；**拒绝 `--project` 指向工具集自己**（退出码 4 ✗ —— 否则会在 `tools/` 下写出与真源重名的副本 ✗）|
 | 文档 | `docs/` | 数值纪律 · 接入清单 · 设计方案 |
 
 ## 设计约定

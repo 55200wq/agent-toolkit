@@ -14,8 +14,14 @@
     python install.py --project <项目根> --check                         # 漂移检查
     python install.py --list                                             # 看会装什么
 
+    ⚠️ `--project` 指向**工具集自己**（或它里面的目录）会被**直接拒绝** ✗
+       （否则会在 tools/ 下写出与真源重名的副本 ✗ 真源只此一份 ✓）
+       · 只想装技能：`python install.py --skills` ✓（不要 `--project` ✓）
+       · 想跑工具集自己的自测：`python tools/selftests/run_all_selftests.py --root .` ✓
+
 【退出码】
     0 成功/一致 ｜ 1 项目副本被本地改过 ｜ 2 落后于工具集 ｜ 3 未安装或参数缺失
+    4 `--project` 指向工具集自己（非法目标 ✗ —— 与上面 0/1/2/3 分开免得混淆 ✓）
 
 【设计约定（改本文件前先读）】
     · 配置是**项目自有**：缺了才写、不覆盖、也不参与漂移比较（各项目本应不同 ✓）
@@ -50,6 +56,22 @@ END = '<!-- agent-toolkit:end -->'
 LEGACY_BEGIN = '<!-- agent-tools:begin'
 LEGACY_END = '<!-- agent-tools:end -->'
 DEFAULT_SKILLS_DIR = Path.home() / '.dsh' / 'skills'      # DSH 默认；其他 agent 用 --skills-dir
+EXIT_BAD_TARGET = 4            # 依据: 语义（退出码；与 --check 的 0/1/2/3 分开 ✗ 免得混淆 ✓）
+
+
+def is_self_target(project: Path) -> bool:
+    """目标是不是"工具集自己"（或它里面的目录）✗
+
+    为什么必须拦：安装器把受管副本写到 `<项目>/tools/*` ✗
+    ⇒ 对工具集自己跑就会在 `tools/` 下多出一堆**与真源重名**的副本 ✗
+      （真源在 `tools/<组>/` 与 `dsh/tools/<组>/` ✓ —— 实测误踩过 ✓：
+       `--project . --skills` 造出 10 个 untracked 文件 ✗，逐个核验后才清掉 ✓）
+    """
+    try:
+        project.relative_to(TOOLKIT)       # 相等或在其内部都会走到这里 ✓
+        return True
+    except ValueError:
+        return False
 
 # 受管文件：源 → 项目内相对路径（参与漂移比较 ✓）
 MANAGED = [
@@ -254,6 +276,13 @@ def main() -> int:
         if not project.is_dir():
             print('[错误] 项目目录不存在：%s' % project)
             return 3
+        if is_self_target(project):
+            print('[错误] --project 指向的是**工具集自己**（或它里面的目录）✗：%s' % project)
+            print('       对工具集自己安装，会在 tools/ 下写出与真源重名的副本 ✗')
+            print('       （真源在 tools/<组>/ 与 dsh/tools/<组>/ ⇒ 真源只此一份 ✓）')
+            print('       只想把技能装给 agent：python install/install.py --skills ✓（不要 --project）')
+            print('       想跑工具集自己的自测：python tools/selftests/run_all_selftests.py --root . ✓')
+            return EXIT_BAD_TARGET
         if a.check:
             return check(project)
         rc = install_project(project, a.with_agents or a.all, a.with_hook or a.all)
