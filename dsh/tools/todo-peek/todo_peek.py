@@ -19,6 +19,11 @@ r"""从 DSH 会话日志里读「任务列表」（`todo/write` 事件）—— 
 【环境变量】
     DSH_SESSIONS_ROOT   覆盖会话根目录（默认 ~/.dsh/sessions）✓ 自测与多 profile 用
 
+【新鲜度（实测发生过的坑 ✗）】
+    输出会带一行「最后一次写入：<时间>（<距今>）｜仍挂着 N 项进行中 ✗ / 无进行中悬空 ✓」✓
+    用途：分清界面上的"转"到底是**真的在做** ✓ 还是**做完忘了更新状态** ✗
+    ⚠️ 只**如实显示时间** ✓ 不拍任何"多久算过期"的阈值 ✗（那需要实测，不能猜 ✗）
+
 【退出码（脚本可判定 ✓）】
     0  正常（含"这个会话没有 todo/write 记录"✓ —— 那不是错误 ✓）
     1  找不到会话文件 ✗ ／ 指定轮次里没有写入 ✗ ／ 参数非法 ✗
@@ -34,6 +39,8 @@ import argparse
 import json
 import os
 import sys
+import time
+from datetime import datetime
 from pathlib import Path
 
 try:                                   # 输出被重定向/走管道时默认编码可能是 GBK ✗
@@ -89,15 +96,38 @@ def pick_session(explicit):
 
 
 def collect(path: Path):
-    """⇒ [(轮次, seq, todos), …]，按日志顺序 ✓"""
+    """⇒ [(轮次, seq, todos, 事件时间), …]，按日志顺序 ✓"""
     turn, out = 0, []
     for ev in iter_events(path):
         t = ev.get('type')
         if t == 'turn/start':
             turn += 1
         elif t == 'todo/write':
-            out.append((turn, ev.get('seq'), (ev.get('data') or {}).get('todos') or []))
+            out.append((turn, ev.get('seq'), (ev.get('data') or {}).get('todos') or [],
+                        ev.get('time')))
     return out
+
+
+def when(ts):
+    """事件时间 ⇒ (datetime 或 None, 秒 或 None)。毫秒/秒都认 ✓"""
+    if not isinstance(ts, (int, float)):
+        return None, None
+    secs = ts / 1000.0 if ts > 1e11 else float(ts)   # 依据: 机制（毫秒时间戳 > 1e11 ✓ 与 session_cost 同口径 ✓）
+    try:
+        return datetime.fromtimestamp(secs), secs
+    except Exception:                                # noqa: BLE001
+        return None, secs
+
+
+def age_text(seconds):
+    """把"距今多久"写成中文 —— **只用来显示** ✓ 不参与任何判断 ✗（所以阈值只是单位换算）"""
+    if seconds is None:
+        return '时间未知'
+    if seconds < 90:              # 依据: 语义（显示单位阈值，不做判断 ✓）
+        return '%d 秒前' % max(int(seconds), 0)
+    if seconds < 5400:            # 依据: 语义（同上 ✓）
+        return '%.0f 分钟前' % (seconds / 60)
+    return '%.1f 小时前' % (seconds / 3600)
 
 
 def counts(todos):
@@ -106,9 +136,12 @@ def counts(todos):
     return done, run
 
 
-def render(tn, seq, todos):
+def render(tn, seq, todos, ts, now):
     done, run = counts(todos)
+    dt, secs = when(ts)
     head = '—— 第 %d 轮（seq=%s）｜%d/%d 已完成' % (tn, seq, done, len(todos))
+    if dt is not None:
+        head += ' ｜ 写入于 %s（%s）' % (dt.strftime('%m-%d %H:%M'), age_text(now - secs))
     if run:
         head += ' ｜ 进行中：' + ' / '.join(str(r) for r in run)
     lines = [head]
@@ -133,13 +166,22 @@ def main() -> int:
     writes = collect(path)
     sel = [w for w in writes if a.turn is None or w[0] == a.turn]
     show = sel if a.all else sel[-1:]
+    now = time.time()
+    hanging = sum(1 for _tn, _sq, todos, _ts in show
+                  for x in todos if x.get('status') == 'in_progress')
 
     if a.json:
+        last = show[-1] if show else None
+        _dt, last_secs = when(last[3]) if last else (None, None)
         print(json.dumps({
             'session': str(path),
             'writes_total': len(writes),
             'turns_with_writes': sorted({w[0] for w in writes}),
-            'shown': [{'turn': tn, 'seq': seq, 'todos': todos} for tn, seq, todos in show],
+            'last_write_age_s': (now - last_secs) if last_secs else None,
+            'shown_in_progress': hanging,
+            'shown': [{'turn': tn, 'seq': seq, 'todos': todos, 'time': ts,
+                       'age_s': (now - when(ts)[1]) if when(ts)[1] else None}
+                      for tn, seq, todos, ts in show],
         }, ensure_ascii=False, indent=2))
     else:
         print('会话：%s' % path)
@@ -152,9 +194,17 @@ def main() -> int:
             return 1
         print('  共 %d 次写入 ｜ 下面显示 %d 次%s'
               % (len(writes), len(show), '（全部）' if a.all else '（最后一次 ✓）'))
-        for tn, seq, todos in show:
+        for tn, seq, todos, ts in show:
             print()
-            print(render(tn, seq, todos))
+            print(render(tn, seq, todos, ts, now))
+        # 新鲜度：让"还在转"到底是"真在做"还是"忘了改"一眼可分 ✓（不拍阈值 ✗ 只如实显示 ✓）
+        if show:
+            dt, secs = when(show[-1][3])
+            if dt is not None:
+                tail = ('｜仍挂着 %d 项进行中 ✗（若已做完 ⇒ 该更新状态了 ✗）' % hanging) if hanging \
+                    else '｜无进行中悬空 ✓'
+                print('\n  最后一次写入：%s（%s）%s'
+                      % (dt.strftime('%Y-%m-%d %H:%M:%S'), age_text(now - secs), tail))
 
     if a.turn is not None and not sel:
         return 1

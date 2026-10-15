@@ -130,6 +130,25 @@ def main() -> int:
             print('    JSON 解析失败:', e)
         check('--json 结构正确', ok)
 
+        # ---- 新鲜度（分清"真在做" vs "忘了更新状态" ✗）
+        check('默认视图带"最后一次写入"时间行', '最后一次写入：' in o and '前）' in o)
+        check('无悬空时明确写"无进行中悬空 ✓"', '无进行中悬空' in o)
+
+        r11 = run('--session', sa / 'session.v4.jsonl.zstd', '--turn', 1)
+        o11 = r11.stdout or ''
+        check('有悬空时点出来（仍挂着 1 项进行中 ✗）', '仍挂着 1 项进行中' in o11, o11.splitlines()[-1][:60])
+        check('每条都带写入时间（%m-%d %H:%M）',
+              '写入于' in o11 and o3.count('写入于') >= 1)
+        try:
+            j2 = json.loads(run('--session', sa / 'session.v4.jsonl.zstd', '--turn', 1,
+                                '--json').stdout)
+            ok2 = (j2['shown_in_progress'] == 1 and isinstance(j2['last_write_age_s'], float)
+                   and j2['shown'][0]['age_s'] > 0)
+        except Exception as e:                  # noqa: BLE001
+            ok2 = False
+            print('    JSON 解析失败:', e)
+        check('--json 带 age_s / shown_in_progress', ok2)
+
         r7 = run('--session', sb / 'session.v4.jsonl.zstd')
         check('没有 todo/write ⇒ 退出码 0（不是错误 ✓）', r7.returncode == 0, 'rc=%d' % r7.returncode)
         check('并明确说"没建过任务列表"', '没有 todo/write 记录' in (r7.stdout or ''))
