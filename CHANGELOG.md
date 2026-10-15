@@ -40,3 +40,13 @@
   - 项目里 **124 个脚本**统一补上 UTF-8 输出兜底（111 个 tools/ + 13 个仓库根 ✓）
   - 7 个带 UTF-8 BOM 的文件清掉 BOM ✓；检查器改用 `utf-8-sig` 读取（BOM 是合法源码 ✓）
   - 自测抓到引擎自身 2 个 bug：docstring 里的 `\U` 转义 ✗、H2 误用"解析后的值"判断 ✗
+
+## 0.3.1 — 2026-10-16
+- 回答"Linux 下是否有效"并实测确认三规则的平台差异：
+  - **H1 平台无关 ✓**（Linux 上价值最大 ✓）
+  - **H2 只认盘符路径 ✗** ⇒ Linux 项目几乎不触发（无害但窄 ✓）
+  - **H3 默认改为按平台开** ✓：Windows 开 ✓ / POSIX 关 ✓（Linux 默认 UTF-8，全开会误报 ✗）
+- 新增 `--rules H1,H3` / `--all-rules`（跨平台核查用 ✓）+ 报告打印平台与启用规则 ✓
+- 新增 `.gitattributes`（shell 脚本强制 LF ✓ 防止 Linux 克隆到 CRLF 导致 shebang 失效 ✗）
+- `install.sh` / `templates/pre-commit` 补上**执行位**（100755 ✓，Linux 上可直接运行 ✓）
+- 文档补「平台差异」与「Linux 上怎么用」两节 ✓

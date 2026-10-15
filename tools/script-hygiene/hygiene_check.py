@@ -49,10 +49,18 @@ except Exception:  # noqa: BLE001
 DEFAULT_CONFIG_NAME = 'hygiene.json'
 DECOR = set('✓✗✅❌⚠★☆→←↔※')          # 装饰性符号（中文也算非 ASCII ✓）
 
+# 平台差异（实测确认 ✓）：
+#   H1 编译      —— 平台无关 ✓（纯 AST）全平台默认开 ✓
+#   H2 路径转义  —— 逻辑平台无关 ✓，但只认"盘符路径"⇒ 在 Linux 上几乎不会触发 ✗（无害但很窄 ✓）
+#   H3 输出编码  —— **Windows 才是真问题** ✗：重定向/走管道时默认 GBK ⇒ UnicodeEncodeError ✓
+#                  Linux 默认就是 UTF-8 ✓（PEP 538/540 连 C locale 也会coerce ✓）⇒ 在 Linux 上是误报 ✗
+#                  ⇒ 默认按平台开：Windows 开 ✓ / 其他平台关 ✓（可用配置或 --all-rules 打开 ✓）
+_IS_WINDOWS = (__import__('os').name == 'nt')
+
 DEFAULTS = {
     'scan': ['**/*.py'],
     'exclude': ['.git/**', '.venv/**', 'venv/**', 'node_modules/**', '**/__pycache__/**'],
-    'rules': {'H1': True, 'H2': True, 'H3': True},
+    'rules': {'H1': True, 'H2': True, 'H3': _IS_WINDOWS},
     'bootstrap_markers': ["reconfigure(encoding", "TextIOWrapper(sys.stdout.buffer",
                           "PYTHONIOENCODING"],
     'h3_ignore_files': [],
@@ -167,9 +175,16 @@ def main() -> int:
     ap.add_argument('--config')
     ap.add_argument('--list', action='store_true')
     ap.add_argument('--fix-note', action='store_true', help='打印修复指引')
+    ap.add_argument('--rules', help='临时覆盖规则，如 H1,H3（逗号分隔；用于跨平台验证）')
+    ap.add_argument('--all-rules', action='store_true', help='打开全部规则（跨平台验证用）')
     a = ap.parse_args()
     root = Path(a.root).resolve() if a.root else Path(__file__).resolve().parent.parent
     cfg = load_cfg(root, a.config)
+    if a.all_rules:
+        cfg['rules'] = {'H1': True, 'H2': True, 'H3': True}
+    elif a.rules:
+        want = {x.strip().upper() for x in a.rules.split(',') if x.strip()}
+        cfg['rules'] = {k: (k in want) for k in ('H1', 'H2', 'H3')}
     files = list(iter_files(root, cfg))
 
     if a.list:
@@ -196,7 +211,9 @@ def main() -> int:
             problems += check_print_encoding(src, rel, tree, cfg)
         n_ok += 1
 
-    print('脚本卫生检查：扫描 %d 个文件（配置：%s）' % (len(files), cfg['_config'] or '默认'))
+    on = ','.join(k for k in ('H1', 'H2', 'H3') if cfg['rules'].get(k)) or '（全部关闭）'
+    print('脚本卫生检查：扫描 %d 个文件 ｜ 平台=%s ｜ 启用的规则=%s ｜ 配置：%s'
+          % (len(files), 'windows' if _IS_WINDOWS else 'posix', on, cfg['_config'] or '默认'))
     if not problems:
         print('  [OK] H1 全部可编译 ｜ H2 无路径转义隐患 ｜ H3 打印非 ASCII 的都有兜底')
         return 0
