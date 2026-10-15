@@ -57,12 +57,16 @@ whenToUse: >-
      是 ⇒ 先压缩 ✓ / 拆会话 ✓，别硬扛 ✗
 ```
 
-## 工具（在 `dsh-tools`）
+## 工具（在 agent-toolkit 仓库的 `dsh/` 下）
 
-```bash
-python tools/session-cost/session_cost.py --turns        # 最贵的 N 轮
-python tools/session-cost/session_cost.py --turn 151     # 单轮步级时间线 + 归因
-python tools/session-cost/session_cost.py --audit        # 成本纪律指标（验收用）
+仓库：https://github.com/55200wq/agent-toolkit
+本地默认：`C:\Users\57226\Desktop\share_data\agent-toolkit`
+
+```powershell
+$T = "$env:USERPROFILE\Desktop\share_data\agent-toolkit"   # 或你的克隆位置
+python "$T\dsh\tools\session-cost\session_cost.py" --turns        # 最贵的 N 轮
+python "$T\dsh\tools\session-cost\session_cost.py" --turn 151     # 单轮步级时间线 + 归因
+python "$T\dsh\tools\session-cost\session_cost.py" --audit        # 成本纪律指标（验收用）
 ```
 
 **验收方式**：看 `--audit` 的 ①作废次数 ②系统提示重建 ③压缩次数 是否下降 ✓
