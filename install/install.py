@@ -40,9 +40,12 @@ except Exception:  # noqa: BLE001
 
 TOOLKIT = Path(__file__).resolve().parent.parent
 VERSION_FILE = TOOLKIT / 'VERSION'
-STAMP_NAME = '.agent-tools.json'
-BEGIN = '<!-- agent-tools:begin'
-END = '<!-- agent-tools:end -->'
+STAMP_NAME = '.agent-tools.json'          # 身份证文件名保持稳定（改名不影响已装项目）
+BEGIN = '<!-- agent-toolkit:begin'
+END = '<!-- agent-toolkit:end -->'
+# 改名前的旧标记：迁移时**替换**旧块，而不是重复追加 ✓
+LEGACY_BEGIN = '<!-- agent-tools:begin'
+LEGACY_END = '<!-- agent-tools:end -->'
 DEFAULT_SKILLS_DIR = Path.home() / '.dsh' / 'skills'      # DSH 默认；其他 agent 用 --skills-dir
 
 # 受管文件：源 → 项目内相对路径（参与漂移比较 ✓）
@@ -133,6 +136,9 @@ def write_agents_snippet(project: Path) -> bool:
     if BEGIN in old:
         new = re.sub(re.escape(BEGIN) + r'.*?' + re.escape(END) + r'\n?', snippet, old,
                      flags=re.S)
+    elif LEGACY_BEGIN in old:                  # 改名前的旧块 ⇒ 替换（**不重复追加** ✓）
+        new = re.sub(re.escape(LEGACY_BEGIN) + r'.*?' + re.escape(LEGACY_END) + r'\n?',
+                     snippet, old, flags=re.S)
     elif old.strip():
         new = old.rstrip() + '\n\n' + snippet
     else:

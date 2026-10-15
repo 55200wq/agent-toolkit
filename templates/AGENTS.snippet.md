@@ -1,4 +1,4 @@
-<!-- agent-tools:begin（这一段由 agent-toolkit 安装器维护；手工改动会在下次安装时被替换）-->
+<!-- agent-toolkit:begin（这一段由 agent-toolkit 安装器维护；手工改动会在下次安装时被替换）-->
 
 ## 数值纪律（必读）
 
@@ -39,4 +39,4 @@ python <agent-toolkit>/install/install.py --project .
 
 ⚠️ **改这些工具要改工具集里的源** ✗ —— 在项目里直接改会被 `--check` 报"被本地改过" ✓
 
-<!-- agent-tools:end -->
+<!-- agent-toolkit:end -->
