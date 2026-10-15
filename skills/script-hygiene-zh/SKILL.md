@@ -2,7 +2,7 @@
 name: script-hygiene-zh
 description: >-
   Windows/中文环境下写脚本的三条硬纪律：① 所有 .py 必须能编译（不许用正则/行号批量改源码）
-  ② 路径不许写反斜杠字面量 ③ 打印非 ASCII 的脚本必须有 UTF-8 输出兜底。
+  ② 路径不许写反斜杠字面量 ③ 打印非 ASCII 的脚本必须有 UTF-8 输出兜底，且 **stdout 与 stderr 都要**兜。
   核心是"修整类，不是修一个文件"——同一类错误重复出现就是因为逐文件打补丁。
   触发词：写脚本、改脚本、批量替换、sed、patch、正则替换源码、UnicodeEncodeError、
   GBK、编码错误、SyntaxError、\U 转义、路径转义、重定向输出、管道输出、控制台乱码。
@@ -51,19 +51,25 @@ P = r'C:\temp\x'    # ✓ raw 字符串
 
 *同一类陷阱*：`python - <<'PY'` heredoc 里写字面量补丁也容易踩 ✗ ⇒ 改源码请用编辑工具 ✓
 
-### H3 打印非 ASCII 的脚本必须有 UTF-8 兜底
+### H3 打印非 ASCII 的脚本必须有 UTF-8 兜底（**stdout 与 stderr 都要** ✗）
 
 任何打印中文/符号的脚本，顶部加（**必须在任何打印之前** ✓，且 `from __future__` 之后 ✓）：
 
 ```python
 try:
     import sys as _sys_h               # 用唯一别名 + del，避免与文件里的名字冲突 ✓
-    _sys_h.stdout.reconfigure(encoding='utf-8', errors='replace')
-    del _sys_h
+    for _s_h in (_sys_h.stdout, _sys_h.stderr):   # ✗ 只兜 stdout 是假兜底
+        _s_h.reconfigure(encoding='utf-8', errors='replace')
+    del _sys_h, _s_h
 except Exception:
     pass
 ```
 
+- **只兜 stdout 是假兜底** ✗（2026-10-16 实测）：`stderr` 仍是 GBK ⇒ **报错信息**变乱码、
+  `✓/✗` 退化成转义字面量 ✗ —— 而报错信息恰恰都走 stderr ✗
+- 老项目里一堆"只兜 stdout"的旧片段 ⇒ 用整类工具升级 ✓，别手工逐个改 ✗：
+  `python tools/fix_bootstrap.py --root .`（干跑）→ `--apply`
+  （写前 `ast.parse` ✓ 写后 `compile()` 复验 ✓；形态认不出的会报到"需人工"✓ 不许猜 ✗）
 - 子进程也要带环境：`PYTHONUTF8=1` / `PYTHONIOENCODING=utf-8` ✓
 - 或者干脆**别用装饰符号**（`✓✗✅`）✓ —— 用 `[OK]/[FAIL]` 更省事 ✓
 

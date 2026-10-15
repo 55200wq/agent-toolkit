@@ -16,8 +16,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-try:                                   # 输出被重定向/走管道时默认 GBK，打印 ✅ 等字符会崩
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+try:                                   # 输出被重定向/走管道时默认编码可能是 GBK ✗
+    import sys as _sys_h               # 打印非 ASCII 会 UnicodeEncodeError ✗ ⇒ 统一兜底 ✓
+    for _s_h in (_sys_h.stdout, _sys_h.stderr):   # stdout 与 stderr 都要兜 ✗
+        _s_h.reconfigure(encoding='utf-8', errors='replace')
+    del _sys_h, _s_h
 except Exception:                      # noqa: BLE001
     pass
 

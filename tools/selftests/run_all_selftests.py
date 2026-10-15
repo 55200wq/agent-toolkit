@@ -31,12 +31,32 @@ import time
 from pathlib import Path
 from pathlib import PurePosixPath as PP
 
-try:
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-except Exception:  # noqa: BLE001
+try:                                   # 输出被重定向/走管道时默认编码可能是 GBK ✗
+    import sys as _sys_h               # 打印非 ASCII 会 UnicodeEncodeError ✗ ⇒ 统一兜底 ✓
+    for _s_h in (_sys_h.stdout, _sys_h.stderr):   # stdout 与 stderr 都要兜 ✗
+        _s_h.reconfigure(encoding='utf-8', errors='replace')
+    del _sys_h, _s_h
+except Exception:                      # noqa: BLE001
     pass
 
-DEFAULT_ROOT = Path(__file__).resolve().parent.parent
+def guess_root() -> Path:
+    """根目录推导 —— **两种布局都要对** ✓
+
+    · 工具集源码布局：`tools/selftests/run_all_selftests.py` ⇒ 根 = 上 3 层
+      （原来写的是"上 2 层"✗ ⇒ 根系成了 `tools/` ⇒ 本仓库 5 个套件只跑到 3 个 ✗）
+    · 装进项目：      `tools/run_all_selftests.py`          ⇒ 根 = 上 2 层 ✓
+
+    判据：引擎所在目录**叫不叫 `selftests`** ✓（只有源码布局有这一层 ✓）
+    ⚠️ 别改成"往上找 selftests.json"✗：装进项目时配置文件就在 `tools/` 里
+       ⇒ 那样找会把根认成 `tools/` ✗（差点又踩一次 ✓）
+    """
+    d = Path(__file__).resolve().parent
+    if d.name == 'selftests':          # 源码布局：tools/selftests/ ⇒ 上 3 层 ✓
+        return d.parent.parent
+    return d.parent                    # 装进项目：tools/ ⇒ 上 2 层 ✓
+
+
+DEFAULT_ROOT = guess_root()
 DEFAULTS = {
     'discover': ['**/*_selftest_*.py'],
     'exclude': ['.git/**', '.venv/**', 'venv/**', 'node_modules/**', '**/__pycache__/**',
@@ -48,12 +68,17 @@ DEFAULTS = {
 
 
 def load_cfg(root, explicit=None):
+    """顺序：`--config` > `<root>/selftests.json` > 引擎同级 `selftests.json`
+
+    ⚠️ **不再把 cwd 当配置来源** ✗ —— 原来 cwd 在候选里 ✗ ⇒ 换个 cwd 就会偷偷用上
+       "当前目录的配置"，发现面完全不同 ✗（实测：从别的项目里跑 ⇒ 只剩 2 套 ✗，
+        而输出上只有一行"配置：内置默认"容易被忽略 ✗）
+    """
     cfg = dict(DEFAULTS)
-    # 顺序：显式 > root 自己的 > 引擎同级 > cwd
-    # （cwd 放最后：跑测试时 cwd 可能是工具集本身，会误用工具集的配置 ✗ —— 自举时抓到的）
     cands = ([Path(explicit)] if explicit else []) + [
-        root / 'selftests.json', Path(__file__).resolve().parent / 'selftests.json',
-        Path.cwd() / 'selftests.json']
+        root / 'selftests.json',
+        Path(__file__).resolve().parent / 'selftests.json']
+    tried = [str(c) for c in cands]
     for c in cands:
         if c.exists():
             raw = json.loads(c.read_text(encoding='utf-8'))
@@ -63,9 +88,19 @@ def load_cfg(root, explicit=None):
                 else:
                     cfg[k] = v
             cfg['_config'] = str(c)
+            cfg['_tried'] = tried
             return cfg
     cfg['_config'] = None
+    cfg['_tried'] = tried
     return cfg
+
+
+def warn_if_default_cfg(cfg):
+    """退回内置默认时**必须出声** ✗（否则"跑了另一批套件"看不出来 ✗）"""
+    if cfg['_config'] is None:
+        print('⚠ 没找到 selftests.json ⇒ 正在用【内置默认】发现面 %s ✗' % cfg['discover'],
+              file=sys.stderr)
+        print('  已找过：%s' % ' ｜ '.join(cfg.get('_tried') or []), file=sys.stderr)
 
 
 def discover(root, cfg):
@@ -87,14 +122,17 @@ def main() -> int:
     ap.add_argument('--fast', action='store_true', help='跳过 slow=true 的套件')
     ap.add_argument('--list', action='store_true')
     ap.add_argument('--config')
-    ap.add_argument('--root', help='项目根（默认本文件上两级）')
+    ap.add_argument('--root', help='项目根（默认：往上找带 selftests.json 的那一层 ✓）')
     a = ap.parse_args()
     root = Path(a.root).resolve() if a.root else DEFAULT_ROOT
     cfg = load_cfg(root, a.config)
+    warn_if_default_cfg(cfg)          # 退回内置默认必须出声 ✗（原来是静默的 ✗）
     files = discover(root, cfg)
 
     if a.list:
-        print('发现 %d 个套件（配置：%s）：' % (len(files), cfg['_config'] or '内置默认'))
+        print('发现 %d 个套件' % len(files))
+        print('  根  ：%s' % root)
+        print('  配置：%s' % (cfg['_config'] or '内置默认 ⚠'))
         for p in files:
             meta = cfg['suites'].get(p.name, {})
             mark = '[skip] ' if p.name in cfg['skip'] else ('[slow] ' if meta.get('slow') else '')
@@ -105,7 +143,8 @@ def main() -> int:
     ok = fail = skip = 0
     fails = []
     print('=' * 78)
-    print('全部自检（发现 %d 套；配置：%s）' % (len(files), cfg['_config'] or '内置默认'))
+    print('全部自检（发现 %d 套 ｜ 根：%s ｜ 配置：%s）'
+          % (len(files), root, cfg['_config'] or '内置默认 ⚠'))
     print('=' * 78)
     for p in files:
         meta = cfg['suites'].get(p.name, {})

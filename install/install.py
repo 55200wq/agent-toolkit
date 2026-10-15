@@ -33,9 +33,12 @@ import sys
 import time
 from pathlib import Path
 
-try:
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-except Exception:  # noqa: BLE001
+try:                                   # 输出被重定向/走管道时默认编码可能是 GBK ✗
+    import sys as _sys_h               # 打印非 ASCII 会 UnicodeEncodeError ✗ ⇒ 统一兜底 ✓
+    for _s_h in (_sys_h.stdout, _sys_h.stderr):   # stdout 与 stderr 都要兜 ✗
+        _s_h.reconfigure(encoding='utf-8', errors='replace')
+    del _sys_h, _s_h
+except Exception:                      # noqa: BLE001
     pass
 
 TOOLKIT = Path(__file__).resolve().parent.parent
@@ -54,6 +57,7 @@ MANAGED = [
     ('tools/provenance/_selftest_provenance.py', 'tools/_selftest_provenance.py'),
     ('tools/selftests/run_all_selftests.py', 'tools/run_all_selftests.py'),
     ('tools/script-hygiene/hygiene_check.py', 'tools/hygiene_check.py'),
+    ('tools/script-hygiene/fix_bootstrap.py', 'tools/fix_bootstrap.py'),
     ('tools/script-hygiene/_selftest_hygiene.py', 'tools/_selftest_hygiene.py'),
 ]
 # 配置模板：源 → 项目内相对路径（缺了才写 ✓ 不参与比较 ✓）

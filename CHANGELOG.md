@@ -1,5 +1,40 @@
 # 变更记录
 
+## 0.5.0 — 2026-10-16
+> 主题：**把上一版只"记录"的三个整类缺陷修掉** ✗（细纲见 0.4.1 末段 ✓）
+
+- **H3 加强：UTF-8 兜底必须覆盖 stdout 与 stderr 两个流** ✗（原来是"有兜底就行"✗）
+  实测缺口：只兜 stdout ⇒ **stderr 仍是 GBK** ⇒ 报错信息变乱码、`✓/✗` 退化成转义字面量 ✗
+  ⇒ 而报错信息**恰恰都走 stderr** ✗（不兜它等于兜了个寂寞）
+  - 判据改成 **AST**（`covered_streams` ✓）而不是字符串匹配 ✗：
+    本项目模板的写法是 `import sys as _sys_h` + `for _s_h in (_sys_h.stdout, _sys_h.stderr)`
+    ⇒ 任何"认 `sys.stdout.reconfigure` 字样"的口径都认不出它 ✗（实测踩到 ✓）
+  - 认三种写法 ✓：`sys.x.reconfigure(...)` / 循环别名 / `io.TextIOWrapper(sys.x.buffer)`
+  - 新增配置 `bootstrap_stderr_markers`（给检查器认不出的写法留后门 ✓ 老配置不会静默放行 ✓）
+  - **实测抓到的假阴性** ✗：`PYTHONIOENCODING` 出现在文件里**不算数** ✗
+    （大量 `test_*.py` 是"给**子进程**设环境变量"✗ ⇒ 管不到自己 ✗ 且运行时设它对已建的流无效 ✗）
+- **新增 `tools/script-hygiene/fix_bootstrap.py`：整类升级兜底** ✓
+  · 干跑为默认 ✓ / `--apply` 才写 ✓ · 写前 `ast.parse` ✓ 写后 `compile()` 复验 ✓ · BOM 原样保留 ✓
+  · 只动"顶层 try + stdout.reconfigure"这一处 ✗（节点 > 12 行就跳过并报"需人工"✓ 不许猜 ✗）
+  · 覆盖三种情形：已两流覆盖 ⇒ 跳过 ✓ / 旧兜底 ⇒ 原地替换 ✓ / 没兜底但打印非 ASCII ⇒ 插入 ✓
+  · 新增自测 `test_fix_bootstrap.py`（16 项 ✓：改了哪些、没改哪些、改完能不能跑 ✓、端到端只剩余下的 ✗）
+  · 已加进安装器 `MANAGED` ✓ ⇒ 项目重装即可获得（`tools/fix_bootstrap.py`）
+- **runner 根目录推导修对** ✗（它自己的 5 个套件原来只跑 3 个 ✗）
+  · 根因：源码布局是 `tools/selftests/run_all_selftests.py` ⇒ `parent.parent` = `tools/` ✗
+    （装进项目才是对的 ✓ —— 所以这个 bug 一直没暴露 ✗）
+  · 判据改成"引擎所在目录**叫不叫 `selftests`**"✓（源码 ⇒ 上 3 层 / 装进项目 ⇒ 上 2 层 ✓）
+    ⚠️ 特意**不用**"往上找 selftests.json"✗：装进项目时配置就在 `tools/` 里 ⇒ 会把根认成 `tools/` ✗
+  · **不再拿 cwd 当配置来源** ✗（原来 cwd 在候选里 ⇒ 换个 cwd 就静默用上别的配置 ✗ 实测只剩 2 套 ✗）
+  · 没找到配置 ⇒ **明确告警并列出"已找过哪些路径"** ✗（原来是静默退回内置默认 ✗）
+  · 自测补布局回归项 ✓：源码布局 / 装进项目布局 / 没有配置时告警 ✓
+- **文档同步**：`templates/AGENTS.snippet.md`、`skills/script-hygiene-zh`、两处 README、
+  配置模板与 `dsh/hygiene.json` 全部改成"两个流都要兜"✓ 并给出新片段 ✓
+- **落地实测（两个仓库都跑通）**：
+  · 工具集：14 个 `.py` 全部升到两流兜底 ✓ 卫生 0 问题 ✓ **6 套自测全绿** ✓（原来只跑到 3 套 ✗）
+  · 项目（sift-match）：H3 报红 **152 个** ✗ ⇒ `fix_bootstrap.py --apply` 写入 152 个 ✓
+    ⇒ 卫生 171 个文件 0 问题 ✓ 溯源 0 缺 ✓ 自检 **14 通过 / 0 失败 / 3 跳过**（与基线一致 ✓）
+    ⇒ 全项目 221 个 `.py` 编译复验 0 失败 ✓
+
 ## 0.4.1 — 2026-10-16
 - **修 `session_cost.py` 的 `--grep` 静默失败** ✗（由用户选定要修的那一项）
   原行为：`--grep 关键词` 单独用 ⇒ 走到 `print_help()` + `return 0`

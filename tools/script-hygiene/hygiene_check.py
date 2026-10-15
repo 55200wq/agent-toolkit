@@ -12,15 +12,29 @@ r"""脚本工程卫生检查（script hygiene）：拦住"改坏源码 / 路径�
     H2 不许把 Windows 反斜杠路径写进字面量 ✓（兜住 B 类：`'C:\\temp'` 里 `\t` 是制表符 ✗ 静默错 ✓）
        —— 用正斜杠 `C:/temp` ✓ 或 raw 字符串 r'C:\\temp' ✓
     H3 打印非 ASCII 的脚本必须有 UTF-8 输出兜底 ✓（兜住 A 类：重定向/走管道不再崩 ✓）
-       —— 兜底形式见配置 bootstrap_markers ✓（默认认 sys.stdout.reconfigure ✓）
+       —— **stdout 和 stderr 必须都兜** ✓（判据用 AST ✓ 认别名/循环写法 ✓ 见 covered_streams）
+          ⚠️ 只兜 stdout 是**假兜底** ✗（2026-10-16 实测抓到的缺口 ✗）：
+             stderr 仍是 GBK ⇒ **报错信息**变乱码 ✗、✓/✗ 退化成转义字面量 ✗；
+             而报错信息恰恰都走 stderr ✗ ⇒ 不兜它等于兜了个寂寞 ✗
+          ⚠️ 老配置只写 bootstrap_markers 也不会静默放行 ✓（stderr 那一半另算 ✓）
 
 【配置 hygiene.json（可选；不写就用默认）】
     {
       "scan": ["**/*.py"], "exclude": [".git/**", ".venv/**"],
       "rules": {"H1": true, "H2": true, "H3": true},
       "bootstrap_markers": ["reconfigure(encoding", "TextIOWrapper(sys.stdout.buffer"],
+      "bootstrap_stderr_markers": ["_sys_h.stderr", "(sys.stdout, sys.stderr)"],
       "h3_ignore_files": []
     }
+
+【推荐兜底片段（stdout 与 stderr 都兜 ✓；工具：fix_bootstrap.py 可整类升级 ✓）】
+    try:                                   # 输出被重定向/走管道时默认编码可能是 GBK ✗
+        import sys as _sys_h               # 打印非 ASCII 会 UnicodeEncodeError ✗ ⇒ 统一兜底 ✓
+        for _s_h in (_sys_h.stdout, _sys_h.stderr):   # 两个流都要兜 ✗
+            _s_h.reconfigure(encoding='utf-8', errors='replace')
+        del _sys_h, _s_h
+    except Exception:                      # noqa: BLE001
+        pass
 
 【用法】
     python hygiene_check.py --root <项目根>            # 检查（有问题=非零退出）
@@ -41,9 +55,12 @@ import json
 import sys
 from pathlib import Path, PurePosixPath as PP
 
-try:
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-except Exception:  # noqa: BLE001
+try:                                   # 输出被重定向/走管道时默认编码可能是 GBK ✗
+    import sys as _sys_h               # 打印非 ASCII 会 UnicodeEncodeError ✗ ⇒ 统一兜底 ✓
+    for _s_h in (_sys_h.stdout, _sys_h.stderr):   # stdout 与 stderr 都要兜 ✗
+        _s_h.reconfigure(encoding='utf-8', errors='replace')
+    del _sys_h, _s_h
+except Exception:                      # noqa: BLE001
     pass
 
 DEFAULT_CONFIG_NAME = 'hygiene.json'
@@ -63,6 +80,11 @@ DEFAULTS = {
     'rules': {'H1': True, 'H2': True, 'H3': _IS_WINDOWS},
     'bootstrap_markers': ["reconfigure(encoding", "TextIOWrapper(sys.stdout.buffer",
                           "PYTHONIOENCODING"],
+    # stderr 那一半：主判据是 **AST**（认别名/循环写法 ✓，见 covered_streams ✓）；
+    # 这里只是给"检查器认不出的写法"留的后门 ✓（老配置没有这个键 ⇒ 用默认 ✓ 不会静默放行 ✗）
+    'bootstrap_stderr_markers': ["_sys_h.stderr", "sys.stderr.reconfigure",
+                                 "TextIOWrapper(sys.stderr.buffer)", "(sys.stdout, sys.stderr)",
+                                 "(_sys_h.stdout, _sys_h.stderr)"],
     'h3_ignore_files': [],
 }
 
@@ -156,20 +178,88 @@ def printed_strings(tree):
     return vals
 
 
+def _stream_of(node):
+    """把表达式判成 'stdout' / 'stderr' / None（认 `sys.x` 与 `sys.x.buffer` 两种 ✓）。"""
+    if isinstance(node, ast.Attribute):
+        if isinstance(node.value, ast.Name) and node.value.id == 'sys' \
+                and node.attr in ('stdout', 'stderr'):
+            return node.attr
+        if node.attr == 'buffer':
+            return _stream_of(node.value)
+    return None
+
+
+def covered_streams(src: str, tree, cfg):
+    """判断文件里的 UTF-8 兜底**覆盖了哪些流** ⇒ 返回 {'stdout'} / {'stderr'} / 两者 ✓
+
+    为什么不能只看字符串标记 ✗：本项目模板的写法是**别名 + 循环**
+        `import sys as _sys_h` … `for _s_h in (_sys_h.stdout, _sys_h.stderr): _s_h.reconfigure(…)`
+    ⇒ 任何"认 `sys.stdout.reconfigure` 字样"的口径都认不出它 ✗（实测踩到 ✓）
+    ⇒ 所以主力判据用 AST ✓，字符串标记只作后备 ✓
+
+    认三种写法 ✓：① `sys.x.reconfigure(...)` ② 循环别名（把 for 的迭代元组解出来 ✓）
+                 ③ `TextIOWrapper(sys.x.buffer, ...)`
+
+    ⚠️ `PYTHONIOENCODING` 这个**字符串出现在文件里不算数** ✗（实测踩到 ✓）：
+       很多脚本是"给**子进程**设 PYTHONIOENCODING"（`subprocess(env={...})`）✗
+       ⇒ 那**管不到自己**的 stderr ✗；而且运行时再设它对已创建的流也无效 ✗
+       ⇒ 只有"外部启动环境里设好"才算 ✓ ⇒ 那种项目请在配置里显式写
+         `bootstrap_stderr_markers: ["PYTHONIOENCODING"]` ✓（后门 ✓）
+    """
+    got = set()
+    if any(m in src for m in cfg['bootstrap_markers']):
+        got.add('stdout')                  # 后备口径：有兜底 ⇒ 至少兜了 stdout ✓（旧口径就是它 ✓）
+    # ① 循环别名：先把 for 目标名 → 覆盖的流 记下来 ✓
+    loops = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.For) and isinstance(node.target, ast.Name):
+            elts = node.iter.elts if isinstance(node.iter, (ast.Tuple, ast.List)) else [node.iter]
+            streams = {_stream_of(e) for e in elts} - {None}
+            if streams:
+                loops[node.target.id] = streams
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        f = node.func
+        if isinstance(f, ast.Attribute) and f.attr == 'reconfigure':      # ①②
+            s = _stream_of(f.value)
+            if s:
+                got.add(s)
+            elif isinstance(f.value, ast.Name) and f.value.id in loops:
+                got |= loops[f.value.id]
+        elif ((isinstance(f, ast.Name) and f.id == 'TextIOWrapper')          # ③
+                or (isinstance(f, ast.Attribute) and f.attr == 'TextIOWrapper')):   # io.X ✓
+            for arg in node.args:
+                s = _stream_of(arg)
+                if s:
+                    got.add(s)
+    for m in (cfg.get('bootstrap_stderr_markers') or []):                  # 后门 ✓
+        if m in src:
+            got.add('stderr')
+    return got
+
+
 def check_print_encoding(src: str, rel: str, tree, cfg):
     if rel in (cfg.get('h3_ignore_files') or []):
         return []
-    has_bootstrap = any(m in src for m in cfg['bootstrap_markers'])
-    if has_bootstrap:
+    # 兜底要**两半都在** ✓：只兜 stdout = 假兜底 ✗（stderr 报错照样乱码 ✗）
+    got = covered_streams(src, tree, cfg)
+    if 'stdout' in got and 'stderr' in got:
         return []
     bad = [(v, ln) for v, ln in printed_strings(tree) if any(ord(c) > 127 for c in v)]
     if not bad:
         return []
     v, ln = bad[0]
-    return [{'rule': 'H3', 'file': rel, 'line': ln,
-             'detail': 'print 里有非 ASCII（如 %r…）但文件缺 UTF-8 输出兜底 ✗ '
-                       '⇒ 加 sys.stdout.reconfigure(encoding=\'utf-8\', errors=\'replace\')'
-                       % v[:12]}]
+    if 'stdout' not in got and 'stderr' not in got:
+        detail = ("print 里有非 ASCII（如 %r…）但文件缺 UTF-8 输出兜底 ✗ ⇒ 加 "
+                  "for _s in (sys.stdout, sys.stderr): _s.reconfigure("
+                  "encoding='utf-8', errors='replace')" % v[:12])
+    else:
+        have = 'stdout' if 'stdout' in got else 'stderr'
+        detail = ("print 里有非 ASCII（如 %r…）但兜底**只兜了 %s** ✗ ⇒ 另一个流仍是 GBK "
+                  "⇒ 报错信息变乱码、✓/✗ 退化成转义字面量 ✗ ⇒ 两个流都要 reconfigure ✓"
+                  % (v[:12], have))
+    return [{'rule': 'H3', 'file': rel, 'line': ln, 'detail': detail}]
 
 
 # ---------------------------------------------------------------- main
@@ -219,7 +309,7 @@ def main() -> int:
     print('脚本卫生检查：扫描 %d 个文件 ｜ 平台=%s ｜ 启用的规则=%s ｜ 配置：%s'
           % (len(files), 'windows' if _IS_WINDOWS else 'posix', on, cfg['_config'] or '默认'))
     if not problems:
-        print('  [OK] H1 全部可编译 ｜ H2 无路径转义隐患 ｜ H3 打印非 ASCII 的都有兜底')
+        print('  [OK] H1 全部可编译 ｜ H2 无路径转义隐患 ｜ H3 打印非 ASCII 的 stdout+stderr 都兜住了')
         return 0
     by_rule = {}
     for it in problems:
@@ -229,7 +319,7 @@ def main() -> int:
         if not items:
             continue
         title = {'H1': '编译失败（改坏了源码）', 'H2': 'Windows 反斜杠路径字面量',
-                 'H3': '打印非 ASCII 但缺 UTF-8 兜底'}[rule]
+                 'H3': '打印非 ASCII 但 UTF-8 兜底不全（stdout/stderr 漏了）'}[rule]
         print('\n%s × %d —— %s' % (rule, len(items), title))
         for it in items[:25]:
             print('  %-42s:%-5d %s' % (it['file'], it['line'], it['detail']))
@@ -239,7 +329,9 @@ def main() -> int:
         print('\n修复指引：')
         print('  H1：写文件前 ast.parse 校验；不要用正则/行号改源码 ✗')
         print('  H2：路径用正斜杠 C:/x/y ✓ 或 r\'C:\\x\\y\' ✓')
-        print("  H3：文件顶部加 try: sys.stdout.reconfigure(encoding='utf-8', errors='replace')")
+        print("  H3：文件顶部加（stdout 与 stderr **都要** ✗ 只兜 stdout 是假兜底）")
+        print("      for _s in (sys.stdout, sys.stderr):")
+        print("          _s.reconfigure(encoding='utf-8', errors='replace')")
     print('\n[FAIL] 脚本卫生检查未通过：%d 处' % len(problems))
     return 1
 

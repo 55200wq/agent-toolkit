@@ -47,16 +47,17 @@ python <agent-toolkit>/install/install.py --project .
 |---|---|---|
 | **H1** | 所有 `.py` 必须能编译 | 用正则/行号批量改源码 ⇒ 改坏文件 ✗ 而且没有任何检查拦住 ✗ |
 | **H2** | 路径不写反斜杠字面量 | `'C:\temp\x'` 里 `\t` 是制表符 ✗ 静默错路径；`\U` 直接语法错 ✗ |
-| **H3** | 打印非 ASCII 的脚本必须有 UTF-8 兜底（**Linux 默认关闭** ✓ 那边默认就是 UTF-8）| 输出被重定向/走管道时用 GBK ✗ ⇒ `UnicodeEncodeError` |
+| **H3** | 打印非 ASCII 的脚本必须有 UTF-8 兜底，**stdout 与 stderr 都要** ✗（只兜 stdout 是**假兜底** ✗；**Linux 默认关闭** ✓ 那边默认就是 UTF-8）| 输出被重定向/走管道时用 GBK ✗ ⇒ `UnicodeEncodeError`；只兜 stdout ⇒ **报错信息仍乱码 / ✓✗ 变转义字面量** ✗ |
 
 ```python
 # H1：改源码只用精确编辑或整文件重写 ✗ 不要用正则/行号；写文件前 ast.parse 校验 ✓
 # H2：路径写正斜杠 C:/x/y ✓ 或 raw 字符串 r'C:\x\y' ✓
-# H3：文件顶部加兜底（必须在任何打印之前执行 ✓）
+# H3：文件顶部加兜底（必须在任何打印之前执行 ✓；**两个流都要** ✗）
 try:
     import sys as _sys_h
-    _sys_h.stdout.reconfigure(encoding='utf-8', errors='replace')
-    del _sys_h
+    for _s_h in (_sys_h.stdout, _sys_h.stderr):
+        _s_h.reconfigure(encoding='utf-8', errors='replace')
+    del _sys_h, _s_h
 except Exception:
     pass
 ```
@@ -64,6 +65,9 @@ except Exception:
 ```
 检查：python tools/hygiene_check.py          # 全项目
       python tools/hygiene_check.py --list   # 看扫描面与口径
+整类升级兜底（把"只兜 stdout"的旧片段一次改完 ✓）：
+      python tools/fix_bootstrap.py --root .            # 干跑（默认不写 ✓）
+      python tools/fix_bootstrap.py --root . --apply     # 真写（写前 ast 校验 ✓ 写后 compile 复验 ✓）
 口径：tools/hygiene.json（scan / exclude / rules）
 ```
 

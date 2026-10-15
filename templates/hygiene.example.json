@@ -1,10 +1,13 @@
 {
  "_说明": "脚本卫生口径（编译/路径转义/输出编码）。改 scan/exclude 适配你的项目。",
  "_平台说明": "H3（输出编码）默认只在 Windows 打开：Windows 重定向/管道默认 GBK；Linux 默认 UTF-8 ⇒ 全开会误报。rules 里显式写 true/false 可覆盖平台默认（下面这份是显式全开，跨平台核查用）。H1（可编译）平台无关，价值最大。",
+ "_H3说明": "H3 要求 stdout 与 stderr **都**有 UTF-8 兜底（只兜 stdout ⇒ 报错信息仍乱码）。主判据是 AST（认别名/循环写法），bootstrap_stderr_markers 只是给检查器认不出的写法留的后门。存量项目升级后用 fix_bootstrap.py 整类升级。",
  "scan": ["**/*.py"],
  "exclude": [".git/**", ".venv/**", "venv/**", "node_modules/**", "**/__pycache__/**",
              "**/vendor/**", "**/third_party/**"],
  "rules": {"H1": true, "H2": true, "H3": true},
  "bootstrap_markers": ["reconfigure(encoding", "TextIOWrapper(sys.stdout.buffer", "PYTHONIOENCODING"],
+ "bootstrap_stderr_markers": ["_sys_h.stderr", "sys.stderr.reconfigure",
+                              "TextIOWrapper(sys.stderr.buffer)", "(sys.stdout, sys.stderr)"],
  "h3_ignore_files": []
 }

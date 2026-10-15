@@ -29,6 +29,11 @@
       "label": "会话成本",
       "slow": false,
       "desc": "造假 DSH 日志验证解析/归因/审计"
+    },
+    "test_fix_bootstrap.py": {
+      "label": "兜底升级",
+      "slow": false,
+      "desc": "造假项目验证替换/插入/不猜怪形态"
     }
   }
 }

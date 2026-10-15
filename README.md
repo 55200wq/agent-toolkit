@@ -106,7 +106,7 @@ agent-toolkit/
 |---|---|---|
 | 数值溯源 | `tools/provenance/` | 引擎 + 配置模板 + 薄封装 + 自测 |
 | 自检汇总 | `tools/selftests/` | 自动发现套件 + 自测 |
-| 脚本卫生 | `tools/script-hygiene/` | H1 可编译 / H2 路径转义 / H3 输出编码 + 自测（H3 在 Linux 默认关 ✓）|
+| 脚本卫生 | `tools/script-hygiene/` | H1 可编译 / H2 路径转义 / H3 输出编码（**stdout 与 stderr 都要兜** ✗）+ `fix_bootstrap.py` 整类升级兜底 + 自测（H3 在 Linux 默认关 ✓）|
 | agent 规则 | `skills/measured-or-flagged-zh/` | 装进 agent 后它写数值时会有意识标来历 |
 | agent 规则 | `skills/script-hygiene-zh/` | 写脚本前：修整类不打补丁 / 校验后写 / 加编码兜底 |
 | **DSH 会话成本** | **`dsh/tools/session-cost/`** | 给轮次号 → 步级 token 时间线 + **把"贵"归因到具体事件** + 成本纪律审计 |
