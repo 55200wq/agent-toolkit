@@ -1,5 +1,35 @@
 # 变更记录
 
+## 0.4.1 — 2026-10-16
+- **修 `session_cost.py` 的 `--grep` 静默失败** ✗（由用户选定要修的那一项）
+  原行为：`--grep 关键词` 单独用 ⇒ 走到 `print_help()` + `return 0`
+  ⇒ **看起来成功，实际一个模式都没执行** ✗（而且为了打印帮助还去扫了几十 MB 日志 ✗）
+  现行为：**先判"要做什么"，再去找会话文件** ✓ ⇒ 无模式 ⇒ 退出码 **2** ✗
+  且额外提示"`--grep` 只是筛选会话，要配合 `--turns` / `--turn N` / `--audit`" ✓
+- 按"修整类"办 ✓（不是只堵 `--grep` 一个洞）：**任何"没执行任何事却返回 0"的路径都改成 2** ✗
+  （无参数 / 只给 `--top` / 只给 `--session` 同样明确失败 ✓）；帮助文本改走 **stderr** ✓ 不在 stdout 冒充报告 ✓
+- 退出码口径写进 docstring 与 `--help`：`0` 完成 ✓ ｜ `1` 找不到会话 / `--grep` 无命中 ✗ ｜ `2` 用法错误 ✗
+- 新增环境变量 `DSH_SESSIONS_ROOT`（覆盖会话根目录 ✓ 自测与多 profile 都用得上 ✓）
+- 自测 **14 项 → 22 项** ✓：补 `--grep` 命中 / 无命中 / 单独用 / 无参数 这 4 条退出码路径 ✓
+- **顺带实测出更严重的同一类缺陷** ✗（本次只修了本工具自己那处 ✗）：
+  UTF-8 兜底片段**只兜 `stdout`** ✗ ⇒ `stderr` 仍是 GBK ⇒ 报错信息变乱码、
+  `✓/✗` 退化成 `\u2713`/`\u2717` 字面量 ✗；而报错恰恰都走 stderr ✗（不兜它等于兜了个寂寞）
+  ⇒ `session_cost.py` 已改为 **stdout + stderr 都兜** ✓
+  ⇒ `templates/AGENTS.snippet.md`、本仓库其余脚本、以及项目里已装的 124 个脚本**仍是只兜 stdout** ✗
+  ⇒ H3 的 `bootstrap_markers` 只要求"出现 `reconfigure(encoding`"⇒ **这个缺口检查不出来** ✗（**待定：是否整类修**）
+- 修 `dsh/README.md` 一处**死链** ✗：`tools/session-cost/README.md` 并不存在 ⇒ 改指 `session_cost.py` ✓
+- **自测收尾时又抓到两个真缺陷** ✗（**本次只记录、未动手** ⇒ 待定是否 0.4.2 一并修 ✗）
+  - `tools/selftests/run_all_selftests.py` 的 `DEFAULT_ROOT` 在**源码布局**下少一层 ✗：
+    源码里它在 `tools/selftests/` ⇒ `parent.parent` = `tools/` ✗（安装到项目里才是对的 ✓）
+    ⇒ 本工具集自己的 5 个套件**只跑到 3 个** ✗ —— `dsh/tools/session-cost/test_session_cost.py`
+      与 `install/test_installer.py` **从来没进过套件** ✗（实测：`--list` 只列 3 个 ✓）
+    ⇒ 而且配置文件是靠 **cwd** 兜住的 ✗ ⇒ **换个 cwd 就静默退回"内置默认"**
+      （发现面完全不同：实测变成 2 套 ✗）⇒ 又一处"看起来跑过了，其实跑的是另一批" ✗
+  - UTF-8 兜底只兜 `stdout`（见上一条 ✓）—— 影响面含 `templates/AGENTS.snippet.md`（发给别人的模板 ✗）
+- 项目侧实测（未改任何 MANAGED 文件 ✓）：`install.py --project <sift_match> --check`
+  ⇒ **落后 1**（`tools/hygiene_check.py` ✗，项目身份证版本还是 0.3.0）
+  ⇒ 属**既有漂移** ✗，与本次改动无关 ✓（重跑安装即可 ✓）
+
 ## 0.1.0 — 2026-10-16
 - 首次整合：把原先散在 skill 与项目里的两份工具集中到本目录
   - `tools/provenance/`：数值溯源自检（引擎 + 配置模板 + 薄封装 + 自测）

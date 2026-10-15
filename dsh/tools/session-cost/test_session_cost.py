@@ -1,12 +1,15 @@
-r"""session_cost 的自测：造一个假会话文件（含缓存失效与注入），验证解析/汇总/归因/审计。
+r"""session_cost 的自测：造一个假会话文件（含缓存失效与注入），验证解析/汇总/归因/审计/退出码。
 
 【为什么必须有】分析工具一旦归因错了 ✗，会把人引到错误的优化方向 ✗
     ⇒ 用"已知答案"的假日志验证：用量汇总、最贵轮排序、未缓存激增的归因、审计指标
+【回归项】--grep 曾单独使用时"打印帮助 + 退出码 0"✗（静默失败）
+    ⇒ 现在：无模式 ⇒ 2 ✗；--grep 无命中 ⇒ 1 ✗；命中 + --turns ⇒ 0 ✓
 【用法】python test_session_cost.py      退出码 0=通过 1=失败
 """
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -35,7 +38,7 @@ def ev(seq, t, data, time_ms):
 
 def build_log(path: Path):
     """造 3 轮：
-       轮1：3 步，全命中缓存，便宜
+       轮1：3 步，全命中缓存，便宜（内含关键词 UNIQUEKW_ABC ⇒ 给 --grep 用 ✓）
        轮2：2 步，步 2 前注入 system-prompt ⇒ 步 2 未缓存激增（用来验证归因）
        轮3：1 步，普通
     """
@@ -58,6 +61,12 @@ def build_log(path: Path):
     add('tool/result', {'turn': 1, 'step': 1,
                         'message': {'role': 'tool', 'toolCallId': 'c1',
                                     'content': [{'type': 'text', 'text': 'x' * 500}]}})
+    # 埋一个只在这里出现的关键词：给 --grep（会话筛选）用 ✓
+    # 用 source.kind='user' ⇒ 只计入 user_bytes ✓ 不会被当成"注入"影响审计数字 ✓
+    add('user/message', {'turn': 1, 'step': 1,
+                         'message': {'role': 'user',
+                                     'content': [{'type': 'text', 'text': 'UNIQUEKW_ABC'}]},
+                         'source': {'kind': 'user'}})
     add('step/start', {'turn': 1, 'step': 2})
     add('assistant/message', {'turn': 1, 'step': 2,
                               'usage': {'inputTokens': 120, 'cacheReadTokens': 1100,
@@ -102,13 +111,25 @@ def build_log(path: Path):
             '\n'.join(json.dumps(r, ensure_ascii=False) for r in rows).encode('utf-8')))
 
 
-def run(sess: Path, *args):
-    import os
+def _env(**extra):
     e = dict(os.environ)
     e.update({'PYTHONUTF8': '1', 'PYTHONIOENCODING': 'utf-8'})
+    e.update(extra)
+    return e
+
+
+def run(sess: Path, *args):
     return subprocess.run([sys.executable, '-X', 'utf8', str(ENGINE), '--session', str(sess), *args],
                           capture_output=True, text=True, encoding='utf-8',
-                          errors='replace', env=e)
+                          errors='replace', env=_env())
+
+
+def run_env(root: Path, *args):
+    """不给 --session，改用 DSH_SESSIONS_ROOT 指向临时根目录 ✓
+    —— 只有这样才测得到"会话定位 + --grep 筛选"这条路径 ✓"""
+    return subprocess.run([sys.executable, '-X', 'utf8', str(ENGINE), *args],
+                          capture_output=True, text=True, encoding='utf-8',
+                          errors='replace', env=_env(DSH_SESSIONS_ROOT=str(root)))
 
 
 def main() -> int:
@@ -154,6 +175,29 @@ def main() -> int:
 
         r5 = run(sess, '--turn', '99')
         check('不存在的轮次 ⇒ 退出码 2', r5.returncode == 2, 'rc=%d' % r5.returncode)
+
+        # ---- 缺陷回归：--grep 曾是"静默空操作"✗（单独用 ⇒ 打印帮助 + 退出码 0）
+        r6 = run_env(tmp, '--grep', 'UNIQUEKW_ABC', '--turns')
+        o6 = r6.stdout or ''
+        check('--grep 命中 + --turns ⇒ 退出码 0', r6.returncode == 0, 'rc=%d' % r6.returncode)
+        check('--grep 选中了含关键词的会话', '轮次数 3' in o6)
+
+        r7 = run_env(tmp, '--grep', 'zzz_never_used_zzz', '--turns')
+        check('--grep 无命中 ⇒ 退出码 1（不是 0 ✗）', r7.returncode == 1, 'rc=%d' % r7.returncode)
+        check('--grep 无命中 ⇒ 明确报"没有会话包含"',
+              '没有会话包含' in ((r7.stdout or '') + (r7.stderr or '')))
+
+        r8 = run_env(tmp, '--grep', 'UNIQUEKW_ABC')
+        check('--grep 单独用 ⇒ 退出码 2（原为 0 ✗）', r8.returncode == 2, 'rc=%d' % r8.returncode)
+        check('--grep 单独用 ⇒ 不产出任何报告（stdout 为空 ✓）',
+              not (r8.stdout or '').strip(), repr((r8.stdout or '')[:40]))
+        check('--grep 单独用 ⇒ stderr 说明它只是筛选',
+              '--grep 只是' in (r8.stderr or ''))
+
+        r9 = run_env(tmp)
+        check('无参数 ⇒ 退出码 2（原为 0 ✗）', r9.returncode == 2, 'rc=%d' % r9.returncode)
+        check('无参数 ⇒ 帮助走 stderr ✗ 不在 stdout 冒充报告',
+              not (r9.stdout or '').strip())
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

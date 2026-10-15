@@ -23,7 +23,18 @@ r"""DSH 会话成本分析：把"某一轮为什么这么贵"拆到步级，并�
     python session_cost.py --turn 151 --json         # 机器可读
     python session_cost.py --audit                   # 成本纪律审计（全部轮次）
     python session_cost.py --session <文件路径>       # 指定会话
-    python session_cost.py --grep 关键词              # 按内容搜会话文件
+    python session_cost.py --grep 关键词 --turns      # 只在含该关键词的会话里统计
+                                                     # ⚠ --grep 是"筛选会话"✓ 不是"搜内容"✗
+                                                     #   （它决定"分析哪个会话"，本身不产出报告 ✗
+                                                     #     所以必须再给 --turns / --turn N / --audit）
+
+【环境变量】
+    DSH_SESSIONS_ROOT   覆盖会话根目录（默认 ~/.dsh/sessions）✓ 自测与多 profile 用
+
+【退出码（脚本可判定 ✓，不会"什么都没做却返回 0" ✗）】
+    0  正常完成 ✓
+    1  找不到会话文件 ✗ ／ --grep 没有任何会话命中 ✗
+    2  用法错误 ✗：没有指定任何模式（没执行任何事）／ 指定的轮次不存在
 
 【依赖】
     Python 3.14+ 自带 compression.zstd ✓；旧版请装 zstandard ✓
@@ -37,17 +48,23 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 
-try:
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-except Exception:  # noqa: BLE001
-    pass
+# 输出兜底：stdout **和 stderr 都要** ✓
+# （只兜 stdout 时 stderr 仍是 GBK ✗ ⇒ 报错信息变乱码，✗ 还会退化成 \u2717 字面量 ✗
+#   而报错信息恰恰都走 stderr ⇒ 不兜它等于兜了个寂寞 ✗）
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:  # noqa: BLE001
+        pass
 
-SESSIONS_ROOT = Path.home() / '.dsh' / 'sessions'
+# 会话根目录：可用环境变量覆盖 ✓（自测要指向假日志 ✓，多 profile 也用得上 ✓）
+SESSIONS_ROOT = Path(os.environ.get('DSH_SESSIONS_ROOT') or (Path.home() / '.dsh' / 'sessions'))
 
 
 # ----------------------------------------------------------------- 压缩读取
@@ -381,7 +398,8 @@ def cmd_audit(path: Path, top: int = 10, ratio: str = '1,0.1,3'):
 def main() -> int:
     ap = argparse.ArgumentParser(description='DSH 会话成本分析（步级 + 归因）')
     ap.add_argument('--session', help='会话文件路径（默认取最近修改的）')
-    ap.add_argument('--grep', help='按内容搜索会话文件')
+    ap.add_argument('--grep', help='只在包含该关键词的会话里分析（会话筛选 ✓ 需配合 '
+                                   '--turns / --turn / --audit ✓ 单独用会报用法错误 ✗）')
     ap.add_argument('--list', action='store_true', help='列出会话文件')
     ap.add_argument('--turns', action='store_true', help='全会话总览 + 最贵的 N 轮')
     ap.add_argument('--turn', type=int, help='分析指定轮次')
@@ -394,15 +412,24 @@ def main() -> int:
 
     if a.list:
         return cmd_list()
+
+    # 先判"要做什么"，再去找会话文件 ✓
+    # 反过来会为了打印帮助去扫几十 MB 日志 ✗；而"什么都没做却返回 0"就是静默失败 ✗
+    # （原缺陷：--grep X 单独用时走到 print_help() + return 0 ⇒ 看起来成功，实际没搜也没算 ✗）
+    if not (a.turns or a.turn is not None or a.audit):
+        print('错误：没有指定要做什么（未执行任何模式）', file=sys.stderr)
+        if a.grep:
+            print('提示：--grep 只是"筛选会话"（决定分析哪个会话）✗，'
+                  '要配合 --turns / --turn N / --audit 才产出报告 ✓', file=sys.stderr)
+        ap.print_help(sys.stderr)
+        return 2
+
     path = pick_session(a)
     if a.turns:
         return cmd_turns(path, a.top)
     if a.turn is not None:
         return cmd_turn(path, a.turn, a.json)
-    if a.audit:
-        return cmd_audit(path, a.top, a.ratio)
-    ap.print_help()
-    return 0
+    return cmd_audit(path, a.top, a.ratio)
 
 
 if __name__ == '__main__':

@@ -9,7 +9,7 @@
 
 | 工具 | 作用 |
 |---|---|
-| [`session-cost`](tools/session-cost/README.md) | **会话成本分析**：定位会话 → 全会话总览 → 单轮步级时间线 → **把"贵"归因到具体动作**（系统提示重建 / 压缩注入 / 指令更新）+ 成本纪律审计 |
+| [`session-cost`](tools/session-cost/session_cost.py) | **会话成本分析**：定位会话 → 全会话总览 → 单轮步级时间线 → **把"贵"归因到具体动作**（系统提示重建 / 压缩注入 / 指令更新）+ 成本纪律审计 |
 
 ## 快速开始
 
@@ -25,8 +25,9 @@ python tools/session-cost/session_cost.py --turn 151
 # 成本纪律审计（把"该改的习惯"变成可度量指标）
 python tools/session-cost/session_cost.py --audit
 
-# 别的会话 / 按内容找
+# 别的会话 / 指定会话
 python tools/session-cost/session_cost.py --list
+# ⚠ --grep 是"筛选会话"✓（决定分析哪个会话），**不是**"搜内容"✗ ⇒ 必须再给一个模式 ✓
 python tools/session-cost/session_cost.py --grep 关键词 --turns
 ```
 
