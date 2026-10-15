@@ -1,0 +1,36 @@
+{
+ "_说明": "本项目的溯源口径。换项目只需改这个文件（引擎 tools/provenance_check.py 不含任何项目知识）。",
+ "_待办": "当前只扫 6 个核心文件（与收敛前一致）。要扩面到整个 tools/ 时：把 scan 改成 tools/*.py，用 --audit 看多出多少项并逐个补标注（预期新增大量未实测项）—— 这是一次独立工作，不要顺手做。",
+ "scan": [
+  "tools/probe_diffuse.py",
+  "tools/game_driver.py",
+  "tools/probe_runner.py",
+  "tools/navmap.py",
+  "tools/stamina_watch.py",
+  "tools/map_live.py"
+ ],
+ "exclude": [
+  "**/_v4_*.py",
+  "**/_selftest_*.py",
+  "**/diag_*.py",
+  "**/provenance_check.py",
+  "**/run_all_selftests.py",
+  "**/calib_map2.py",
+  "**/map_live.py",
+  "**/probe_pose_once.py"
+ ],
+ "tags": {
+  "untested": ["依据: 未实测"],
+  "measured": ["依据: 实测"],
+  "mechanism": ["依据: 机制"],
+  "semantic": ["依据: 语义"]
+ },
+ "lookback_lines": 6,
+ "exempt_name_patterns": ["^_", "_T$", "_T0$", "_TIME$", "_UNTIL$", "_TS$"],
+ "exempt_self_names": ["t", "pos", "x", "y", "heading"],
+ "semantic_names": ["VAULT", "UNKNOWN", "WALK", "BLOCK", "STUCK", "CELL_INDEX"],
+ "logic_values": ["0", "1", "2", "-1"],
+ "assumptions_out": "res/sift/nav/assumptions.json",
+ "assumptions_note": "**未实测的初值清单**（自动生成，勿手改）。这些值没有真机实测依据，只是初值；改判据前应先测它们。",
+ "premise": "所有像素值在 map2.png（2359x1896）像素空间，SIFT 模板 = res/sift/map/map2.png"
+}

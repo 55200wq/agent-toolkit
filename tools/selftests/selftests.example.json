@@ -1,0 +1,26 @@
+{
+ "_说明": "本项目自检套件的口径（可选）。套件本身按 **/*_selftest_*.py 自动发现，这里只加标签/慢标志/跳过。",
+ "discover": ["**/*_selftest_*.py"],
+ "exclude": [".git/**", ".venv/**", "**/__pycache__/**", "**/_v4_*.py"],
+ "timeout_s": 600,
+ "skip": [
+  "_selftest_gait.py",
+  "_selftest_recorder.py"
+ ],
+ "suites": {
+  "_selftest_calib.py": {"label": "标定", "slow": false, "desc": "k=5：map2↔官方 z5 标定、尺度比、模板一致"},
+  "_selftest_measured_params.py": {"label": "实测档案", "slow": false, "desc": "k=8：代码阈值必须等于档案数值"},
+  "_selftest_provenance.py": {"label": "溯源", "slow": false, "desc": "每个可调数值必须写明来历（实测/机制/未实测）"},
+  "_selftest_game_driver.py": {"label": "驱动", "slow": false, "desc": "k=25：位姿/朝向/翻越/体力/死亡检测"},
+  "_selftest_probe_diffuse.py": {"label": "探索核心", "slow": false, "desc": "W1–W8：建图召回/撞墙/丢锁/滑索/攀爬"},
+  "_selftest_goto_recovery.py": {"label": "目标导向恢复", "slow": true, "desc": "16 项：绕行/不可达/一次卡住只翻一次/磨蹭"},
+  "_selftest_goto_offline.py": {"label": "离线闭环", "slow": false, "desc": "P1 到达精度 <1.3px（含延迟注入）"},
+  "_selftest_b1_integration.py": {"label": "B1集成", "slow": false, "desc": "早期 waypoint 集成检查（非主线）"},
+  "_selftest_climb_bot_run.py": {"label": "攀爬脚本", "slow": false, "desc": "早期攀爬执行器检查（非主线）"},
+  "_selftest_coast.py": {"label": "滑行", "slow": false, "desc": "滑行/丢帧行为检查（非主线）"},
+  "_selftest_heldkeys.py": {"label": "按键保持", "slow": false, "desc": "按键保持语义检查"},
+  "_selftest_snap.py": {"label": "吸附", "slow": false, "desc": "停稳/吸附检查"},
+  "_selftest_stuck.py": {"label": "卡住检测", "slow": false, "desc": "卡住检测器单元检查"},
+  "_selftest_waypoint_json.py": {"label": "路点JSON", "slow": false, "desc": "路点文件格式检查"}
+ }
+}
