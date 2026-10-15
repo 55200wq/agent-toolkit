@@ -10,7 +10,7 @@ python provenance_check.py --root <项目根> --audit               # 列出没�
 python provenance_check.py --root <项目根> --write-assumptions    # 生成未实测清单
 ```
 
-配置：`provenance.example.json`（拷成项目根的 `provenance.json` 再改）
+配置：`../../templates/provenance.example.json`（安装器会拷成项目的 `tools/provenance.json`）
 
 **不做**：不查值对错 ✗；不扫函数体内的行内字面量 ✗；抓不到回复里的错误断言 ✗
 **自测**：`python test_provenance.py`

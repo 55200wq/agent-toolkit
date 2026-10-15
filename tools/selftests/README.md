@@ -9,7 +9,7 @@ python run_all_selftests.py --root <项目根> --fast   # 跳过 slow=true
 python run_all_selftests.py --root <项目根> --list   # 看发现哪些
 ```
 
-发现规则：默认 `**/*_selftest_*.py`；配置 `selftests.json` 可改 discover / exclude / skip / timeout_s，
+发现规则：默认 `**/*_selftest_*.py`；配置 `../../templates/selftests.example.json` 可改 discover / exclude / skip / timeout_s，
 并给每个套件加 `label` / `slow` / `desc`。
 
 **自测**：`python test_runner.py`

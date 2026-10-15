@@ -1,0 +1,31 @@
+#!/bin/sh
+# 提交前把关：拦住"没有依据的数值常量"和"档案与代码漂移"。
+# 只跑快检查（<2 秒）；完整自检请手动跑 python tools/run_all_selftests.py
+set -e
+
+PY=python
+command -v $PY >/dev/null 2>&1 || PY=python3
+
+echo "[pre-commit] 溯源检查（每个数值必须有「依据」）..."
+$PY tools/_selftest_provenance.py >/dev/null || {
+    echo ""
+    echo "✗ 提交被拦下：有数值常量没写「依据」"
+    echo "  查看：python tools/_selftest_provenance.py --audit"
+    echo "  三态：依据: 实测 … / 依据: 机制 … / 依据: 未实测 …"
+    exit 1
+}
+
+echo "[pre-commit] 实测档案一致性..."
+$PY tools/_selftest_measured_params.py >/dev/null || {
+    echo "✗ 提交被拦下：代码阈值与 res/sift/nav/measured_params.json 不一致"
+    echo "  改代码或改档案后，两边必须相同（照着报错改一处即可）"
+    exit 1
+}
+
+echo "[pre-commit] 标定检查..."
+$PY tools/_selftest_calib.py >/dev/null || {
+    echo "✗ 提交被拦下：标定自检失败（可能换了底图/模板却没重标）"
+    exit 1
+}
+
+echo "[pre-commit] OK（建议收工前跑完整自检：python tools/run_all_selftests.py）"

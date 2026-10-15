@@ -1,11 +1,24 @@
 {
- "_说明": "agent-tools 自己的自测（命名约定与项目不同：这里用 test_*.py）",
- "discover": ["**/test_*.py"],
- "exclude": [".git/**", "**/__pycache__/**"],
+ "_说明": "agent-toolkit 自己的自测（命名约定：test_*.py）",
+ "discover": [
+  "**/test_*.py"
+ ],
+ "exclude": [
+  ".git/**",
+  "**/__pycache__/**"
+ ],
  "skip": [],
  "timeout_s": 300,
  "suites": {
-  "test_provenance.py": {"label": "溯源工具", "slow": false, "desc": "造假项目验证检查器行为"},
-  "test_runner.py": {"label": "汇总器", "slow": false, "desc": "造 3 个假套件验证发现/超时/汇总"}
+  "test_provenance.py": {
+   "label": "溯源工具",
+   "slow": false,
+   "desc": "造假项目验证检查器行为"
+  },
+  "test_runner.py": {
+   "label": "汇总器",
+   "slow": false,
+   "desc": "造 3 个假套件验证发现/超时/汇总"
+  }
  }
 }
