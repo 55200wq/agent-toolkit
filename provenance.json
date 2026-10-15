@@ -1,5 +1,5 @@
 {
- "_说明": "agent-tools 自己也要过自己的溯源检查（自举）。 注：test_*.py 里的常量是故意的测试夹具（必须无标注才能测检查器）⇒ 排除。",
+ "_说明": "agent-toolkit 自己也要过自己的溯源检查（自举）。 注：test_*.py 里的常量是故意的测试夹具（必须无标注才能测检查器）⇒ 排除。",
  "scan": [
   "tools/**/*.py",
   "install/*.py"
@@ -43,6 +43,6 @@
   "-1"
  ],
  "assumptions_out": "docs/unmeasured.json",
- "assumptions_note": "agent-tools 自身的未实测初值清单（自动生成，勿手改）。",
+ "assumptions_note": "agent-toolkit 自身的未实测初值清单（自动生成，勿手改）。",
  "premise": "本工具集不含项目知识；各项目的像素/时间阈值在各自项目里标定。"
 }

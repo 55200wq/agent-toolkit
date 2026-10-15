@@ -3,7 +3,7 @@
 【这是什么】
     本脚本是 agent-toolkit（https://github.com/<user>/agent-toolkit）的安装入口 ✓
     它把工具集的**完整实现**分发到三处：
-      · 项目：可执行工具副本 + 配置模板（**缺了才写，绝不覆盖** ✓）+ 身份证 `.agent-tools.json`
+      · 项目：可执行工具副本 + 配置模板（**缺了才写，绝不覆盖** ✓）+ 身份证 `.agent-tools.json`（文件名保持稳定，改名不影响已装项目）
       · agent：规则 skill（DSH 默认 `~/.dsh/skills/`，其他 agent 用 `--skills-dir`）
       · 项目 AGENTS.md：数值纪律片段（**标记包裹、幂等替换** ✓）
 
